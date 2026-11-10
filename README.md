@@ -1,5 +1,12 @@
 # 📌 TaskSync
 
+![Status](https://img.shields.io/badge/status-em%20produção-brightgreen)
+![Java](https://img.shields.io/badge/Java-17-orange?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-produção-4169E1?logo=postgresql&logoColor=white)
+![Deploy Backend](https://img.shields.io/badge/backend-Railway-0B0D0E?logo=railway&logoColor=white)
+![Deploy Frontend](https://img.shields.io/badge/frontend-Vercel-000000?logo=vercel&logoColor=white)
+
 TaskSync é um gerenciador pessoal e profissional que junta, num único painel,
 as coisas que normalmente ficam espalhadas em apps diferentes: tarefas do dia
 a dia, agenda, metas, controle financeiro (incluindo investimentos) e a gestão
@@ -77,3 +84,22 @@ Gerenciador/
 
 > 📝 Espaço reservado para as próximas atualizações do roadmap — conforme
 > novas fases forem planejadas, elas entram aqui.
+
+## 📚 Documentação técnica
+
+Documentação de engenharia (arquitetura, modelo de dados, API, segurança,
+decisões técnicas e débito técnico priorizado) vive em
+[`docs/arquitetura/`](docs/arquitetura/00-visao-geral.md):
+
+- [Visão geral](docs/arquitetura/00-visao-geral.md)
+- [Arquitetura do sistema](docs/arquitetura/01-arquitetura-sistema.md)
+- [Modelo de dados](docs/arquitetura/02-modelo-dados.md)
+- [Referência da API](docs/arquitetura/03-api.md)
+- [Segurança](docs/arquitetura/04-seguranca.md)
+- [Decisões técnicas (ADRs)](docs/arquitetura/05-decisoes-tecnicas.md)
+- [Débito técnico e roadmap de evolução](docs/arquitetura/06-debito-tecnico-roadmap.md)
+
+## 🕘 Histórico de mudanças
+
+O [`CHANGELOG.md`](CHANGELOG.md) registra, em ordem cronológica, cada marco
+relevante do projeto — é atualizado a cada mudança significativa.
