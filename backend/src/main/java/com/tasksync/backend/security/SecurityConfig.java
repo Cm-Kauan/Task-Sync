@@ -64,13 +64,13 @@ public class SecurityConfig {
                                 // para /error antes de responder. Se essa rota não estiver liberada,
                                 // o Spring Security bloqueia esse encaminhamento com 403, escondendo
                                 // o erro real (500) atrás de um 403 enganoso.
-                                "/error",
-                                // TODO (próxima fase): o dashboard ainda não envia o token JWT nas
-                                // chamadas. Enquanto isso não é conectado, essas rotas ficam públicas
-                                // para não travar o front-end existente. Depois de integrar o login,
-                                // remover essas rotas do permitAll e trocar por autenticação real.
-                                "/api/tasks/**", "/api/finance/**", "/api/projects/**", "/api/team/**"
+                                "/error"
                         ).permitAll()
+                        // Fase 4.2: /api/tasks, /api/finance, /api/projects e /api/team agora
+                        // exigem autenticação (token JWT válido) e cada controller filtra os
+                        // dados pelo usuário autenticado (ver CurrentUserService) - não é mais
+                        // suficiente estar logado como "alguém", o dado também precisa pertencer
+                        // a quem está pedindo.
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable())) // necessario para o H2 console em dev

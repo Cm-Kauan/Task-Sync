@@ -17,6 +17,10 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Sem "nullable = false": ver comentário equivalente em Task.java.
+    @Column(name = "user_id")
+    private Long userId;
+
     // "desc" e palavra reservada no PostgreSQL (usada em ORDER BY ... DESC) e
     // causa erro de sintaxe se usada como nome de coluna sem aspas. Por isso o
     // campo se chama "description" em vez de "desc". @JsonAlias aceita o nome
@@ -50,6 +54,14 @@ public class Transaction {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getDescription() {

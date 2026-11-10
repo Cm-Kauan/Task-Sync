@@ -21,6 +21,13 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Sem "nullable = false" de propósito: linhas criadas antes da Fase 4.2
+    // (antes deste campo existir) ficam com user_id nulo em vez de quebrar a
+    // migração. Na aplicação, toda tarefa nova sempre recebe um userId (ver
+    // TaskController) - o controle de dono é feito em código, não só no banco.
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(nullable = false)
     private String title;
 
@@ -55,6 +62,14 @@ public class Task {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getTitle() {
