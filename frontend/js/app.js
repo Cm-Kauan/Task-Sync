@@ -1,3 +1,16 @@
+// Escapa dado vindo da API antes de inserir via innerHTML - texto de usuário
+// (título de tarefa, descrição, nome de projeto/membro, categoria, tag)
+// nunca deve ser inserido cru, senão um valor salvo como "<img src=x
+// onerror=...>" executa para qualquer sessão que renderizar a lista. Também
+// é seguro para usar dentro de atributos com aspas simples (onclick="...('${x}')"),
+// já que o navegador decodifica entidades HTML antes de interpretar o
+// atributo como JS.
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
 let allTasks = [];
 let currentView = 'tarefas';
 let searchQuery = '';
@@ -198,14 +211,14 @@ function renderTasks() {
 function taskCard(t) {
   const subtasks = parseSubtasks(t.subtasks);
   const doneSub = subtasks.filter(s => s.done).length;
-  const tags = (t.tags || '').split(',').filter(Boolean).map(tg => `<span class="tag-pill bg-indigo-50 text-indigo-600">${tg.trim()}</span>`).join('');
+  const tags = (t.tags || '').split(',').filter(Boolean).map(tg => `<span class="tag-pill bg-indigo-50 text-indigo-600">${escapeHtml(tg.trim())}</span>`).join('');
   const overdue = t.due_date && t.due_date < today && !t.completed;
   return `<div class="task-card glass rounded-xl p-4 priority-${t.priority} slide-in cursor-pointer" onclick="editTask(${t.id})">
     <div class="flex items-start gap-3">
       <button onclick="event.stopPropagation();toggleComplete(${t.id})" class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 ${t.completed ? 'bg-green-500 border-green-500' : 'border-slate-300 hover:border-indigo-400'} flex items-center justify-center transition-all">${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}</button>
       <div class="flex-1 min-w-0">
-        <p class="font-medium text-sm ${t.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${t.title}</p>
-        ${t.description ? `<p class="text-xs text-slate-500 mt-0.5 truncate">${t.description}</p>` : ''}
+        <p class="font-medium text-sm ${t.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(t.title)}</p>
+        ${t.description ? `<p class="text-xs text-slate-500 mt-0.5 truncate">${escapeHtml(t.description)}</p>` : ''}
         <div class="flex items-center gap-2 mt-2 flex-wrap">${tags}${t.due_date ? `<span class="text-xs ${overdue ? 'text-red-500 font-medium' : 'text-slate-400'}"><i data-lucide="calendar" class="w-3 h-3 inline"></i> ${formatDate(t.due_date)}</span>` : ''}${subtasks.length ? `<span class="text-xs text-slate-400">${doneSub}/${subtasks.length} subtarefas</span>` : ''}</div>
       </div>
       <button onclick="event.stopPropagation();promptDelete(${t.id})" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -278,7 +291,7 @@ function renderProfissional() {
     const color = (status) => projectStatusColors[status] || '#64748b';
     projectList.innerHTML = projects.map(p => `<div class="pro-card rounded-xl p-4">
       <div class="flex items-center justify-between mb-2">
-        <p class="text-sm font-semibold text-slate-800">${p.name}</p>
+        <p class="text-sm font-semibold text-slate-800">${escapeHtml(p.name)}</p>
         <button onclick="promptDelete(${p.id}, 'project')" class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
       </div>
       <select onchange="updateProjectStatus(${p.id}, this.value)" class="text-xs px-2 py-1 rounded-full border-0 mb-2" style="background:${color(p.status)}20;color:${color(p.status)}">
@@ -305,8 +318,8 @@ function renderProfissional() {
   } else {
     teamEmpty.classList.add('hidden');
     teamList.innerHTML = team.map((m, i) => `<div class="flex items-center gap-2 pro-card rounded-lg px-3 py-2">
-      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:${teamColors[i % teamColors.length]}">${m.name.charAt(0).toUpperCase()}</div>
-      <div><p class="text-sm font-medium text-slate-800">${m.name}</p><p class="text-xs text-slate-400">${m.role || ''}</p></div>
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:${teamColors[i % teamColors.length]}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
+      <div><p class="text-sm font-medium text-slate-800">${escapeHtml(m.name)}</p><p class="text-xs text-slate-400">${escapeHtml(m.role || '')}</p></div>
       <button onclick="promptDelete(${m.id}, 'team')" class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 ml-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
     </div>`).join('');
   }
@@ -368,8 +381,8 @@ function renderGoals() {
   empty.classList.add('hidden');
   list.innerHTML = goals.map(g => {
     const pct = g.goal_target ? Math.min(100, Math.round((g.goal_current || 0) / g.goal_target * 100)) : 0;
-    const tags = (g.tags || '').split(',').filter(Boolean).map(tg => `<span class="tag-pill bg-purple-50 text-purple-600">${tg.trim()}</span>`).join('');
-    return `<div class="glass rounded-xl p-5 fade-in"><div class="flex items-start justify-between mb-3"><div><p class="font-semibold text-sm text-slate-800">${g.title}</p><div class="flex gap-1 mt-1">${tags}</div></div><button onclick="promptDelete(${g.id})" class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex items-center gap-2 mb-2"><div class="flex-1 bg-slate-200 rounded-full h-2.5"><div class="h-2.5 rounded-full goal-progress" style="width:${pct}%;background:linear-gradient(90deg,#6366f1,#a78bfa)"></div></div><span class="text-xs font-semibold text-indigo-600">${pct}%</span></div><div class="flex items-center justify-between"><span class="text-xs text-slate-400">${g.goal_current || 0} / ${g.goal_target}</span><div class="flex gap-1"><button onclick="updateGoalProgress(${g.id}, -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-bold transition-all">−</button><button onclick="updateGoalProgress(${g.id}, 1)" class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 flex items-center justify-center text-indigo-700 text-lg font-bold transition-all">+</button></div></div></div>`;
+    const tags = (g.tags || '').split(',').filter(Boolean).map(tg => `<span class="tag-pill bg-purple-50 text-purple-600">${escapeHtml(tg.trim())}</span>`).join('');
+    return `<div class="glass rounded-xl p-5 fade-in"><div class="flex items-start justify-between mb-3"><div><p class="font-semibold text-sm text-slate-800">${escapeHtml(g.title)}</p><div class="flex gap-1 mt-1">${tags}</div></div><button onclick="promptDelete(${g.id})" class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex items-center gap-2 mb-2"><div class="flex-1 bg-slate-200 rounded-full h-2.5"><div class="h-2.5 rounded-full goal-progress" style="width:${pct}%;background:linear-gradient(90deg,#6366f1,#a78bfa)"></div></div><span class="text-xs font-semibold text-indigo-600">${pct}%</span></div><div class="flex items-center justify-between"><span class="text-xs text-slate-400">${g.goal_current || 0} / ${g.goal_target}</span><div class="flex gap-1"><button onclick="updateGoalProgress(${g.id}, -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-bold transition-all">−</button><button onclick="updateGoalProgress(${g.id}, 1)" class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 flex items-center justify-center text-indigo-700 text-lg font-bold transition-all">+</button></div></div></div>`;
   }).join('');
   lucide.createIcons();
 }
@@ -422,7 +435,7 @@ function renderTagFilters() {
   const wsTasks = getTasks();
   const tags = new Set();
   wsTasks.forEach(t => (t.tags || '').split(',').filter(Boolean).forEach(tg => tags.add(tg.trim())));
-  document.getElementById('tag-filters').innerHTML = [...tags].map(tg => `<button onclick="toggleTagFilter('${tg}')" class="tag-pill ${tagFilter === tg ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'} hover:opacity-80 transition-all">${tg}</button>`).join('');
+  document.getElementById('tag-filters').innerHTML = [...tags].map(tg => `<button onclick="toggleTagFilter('${escapeHtml(tg)}')" class="tag-pill ${tagFilter === tg ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600'} hover:opacity-80 transition-all">${escapeHtml(tg)}</button>`).join('');
 }
 
 function openModal(task) {
@@ -581,7 +594,7 @@ function renderFinCharts() {
       ctx.fillStyle = '#1e293b'; ctx.font = 'bold 16px DM Sans'; ctx.textAlign = 'center'; ctx.fillText('R$ ' + catTotal.toLocaleString('pt-BR'), 110, 115);
     }
   }
-  document.getElementById('donut-legend').innerHTML = catEntries.map(([k], i) => `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full" style="background:${catColors[i % catColors.length]}"></span>${k}</span>`).join('');
+  document.getElementById('donut-legend').innerHTML = catEntries.map(([k], i) => `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full" style="background:${catColors[i % catColors.length]}"></span>${escapeHtml(k)}</span>`).join('');
 
   // Bar chart e line chart - historico real dos meses com lancamentos
   const totals = monthlyTotals(finTransactions).slice(-3);
@@ -648,8 +661,8 @@ function renderTransactions() {
         <i data-lucide="${t.type === 'entrada' ? 'trending-up' : t.type === 'cartao' ? 'credit-card' : 'trending-down'}" class="w-4 h-4 ${typeColors[t.type]}"></i>
       </div>
       <div>
-        <p class="text-sm font-medium text-slate-800">${t.description}</p>
-        <p class="text-xs text-slate-400">${typeLabels[t.type]} • ${paymentLabels[t.payment] || t.payment} • ${t.category}</p>
+        <p class="text-sm font-medium text-slate-800">${escapeHtml(t.description)}</p>
+        <p class="text-xs text-slate-400">${typeLabels[t.type]} • ${paymentLabels[t.payment] || t.payment} • ${escapeHtml(t.category)}</p>
       </div>
     </div>
     <div class="flex items-center gap-2">
@@ -710,7 +723,7 @@ function renderInstallments() {
   const container = document.getElementById('installment-timeline');
   if (!finInstallments.length) { container.innerHTML = ''; return; }
   const currentMonth = new Date().toISOString().slice(0, 7);
-  container.innerHTML = `<p class="text-sm font-semibold text-slate-700 mb-2">${finInstallments[0].desc} — ${finInstallments.length}x de R$ ${finInstallments[0].amount.toLocaleString('pt-BR')}</p>` +
+  container.innerHTML = `<p class="text-sm font-semibold text-slate-700 mb-2">${escapeHtml(finInstallments[0].desc)} — ${finInstallments.length}x de R$ ${finInstallments[0].amount.toLocaleString('pt-BR')}</p>` +
     `<div class="grid gap-2">${finInstallments.map(inst => {
       const isCurrent = inst.month === currentMonth;
       const isPast = inst.month < currentMonth;
@@ -788,7 +801,7 @@ function renderInvestmentTable() {
     const status = gain >= 0 ? 'Ganho' : 'Perda';
     const statusColor = gain >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700';
     return `<tr class="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-      <td class="px-3 py-2.5 font-medium text-slate-800">${inv.name}</td>
+      <td class="px-3 py-2.5 font-medium text-slate-800">${escapeHtml(inv.name)}</td>
       <td class="px-3 py-2.5"><span class="${typeColors[inv.type]} font-medium text-xs">${typeLabels[inv.type]}</span></td>
       <td class="text-right px-3 py-2.5 text-slate-700">R$ ${inv.applied.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
       <td class="text-right px-3 py-2.5 text-slate-700 font-medium">R$ ${inv.current.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>

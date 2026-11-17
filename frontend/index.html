@@ -72,7 +72,7 @@
       <form id="register-form" class="grid gap-3 hidden" onsubmit="handleRegister(event)">
         <div><label for="reg-name" class="text-sm font-medium text-slate-700">Nome</label><input id="reg-name" type="text" required class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
         <div><label for="reg-email" class="text-sm font-medium text-slate-700">E-mail</label><input id="reg-email" type="email" required class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
-        <div><label for="reg-password" class="text-sm font-medium text-slate-700">Senha (mínimo 6 caracteres)</label><input id="reg-password" type="password" minlength="6" required class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
+        <div><label for="reg-password" class="text-sm font-medium text-slate-700">Senha (mínimo 8 caracteres, com letra e número)</label><input id="reg-password" type="password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).+" title="Mínimo 8 caracteres, com pelo menos uma letra e um número" required class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
         <div><label for="reg-phone" class="text-sm font-medium text-slate-700">Telefone</label><input id="reg-phone" type="tel" required placeholder="(11) 99999-8888" class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
         <button type="submit" class="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-all hover:shadow-lg mt-2" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">Criar conta</button>
       </form>

@@ -27,7 +27,11 @@ public class CorsConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "https://*.vercel.app"
+                // URL exata do frontend em produção - não um wildcard "*.vercel.app",
+                // que liberaria qualquer projeto Vercel de qualquer conta, não só o
+                // nosso. Se o domínio do frontend mudar (ex.: renomear o projeto na
+                // Vercel), essa linha precisa ser atualizada.
+                "https://gerenciador-mocha-xi.vercel.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
