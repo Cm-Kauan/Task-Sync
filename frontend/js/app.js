@@ -97,6 +97,8 @@ async function handleLogin(e) {
   showAuthError('');
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
   try {
     const data = await api.login({ email, password });
     saveSession(data);
@@ -109,6 +111,8 @@ async function handleLogin(e) {
     } else {
       showAuthError(err.message);
     }
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -119,12 +123,16 @@ async function handleRegister(e) {
   const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
   const phone = document.getElementById('reg-phone').value.trim();
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
   try {
     await api.register({ name, email, password, phone });
     pendingVerificationEmail = email;
     showVerifyChannelStep();
   } catch (err) {
     showAuthError(err.message);
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -141,6 +149,9 @@ function showVerifyChannelStep() {
 async function requestVerificationCode(method) {
   showAuthError('');
   const msgEl = document.getElementById('verify-channel-msg');
+  const btn = document.getElementById(method === 'email' ? 'channel-email-btn' : null);
+  if (btn) btn.disabled = true;
+  msgEl.textContent = 'Enviando código...';
   try {
     const res = await api.sendVerificationCode({ email: pendingVerificationEmail, method });
     msgEl.textContent = res.message || 'Código enviado.';
@@ -148,6 +159,8 @@ async function requestVerificationCode(method) {
     document.getElementById('verify-code-form').classList.remove('hidden');
   } catch (err) {
     msgEl.textContent = err.message;
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -155,12 +168,16 @@ async function handleVerifyCode(e) {
   e.preventDefault();
   showAuthError('');
   const code = document.getElementById('verify-code-input').value.trim();
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
   try {
     const data = await api.verifyCode({ email: pendingVerificationEmail, code });
     saveSession(data);
     await initDashboard();
   } catch (err) {
     showAuthError(err.message);
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -378,32 +395,47 @@ function closeProjectModal() { closeModalById('project-modal'); }
 
 async function handleProjectSubmit(e) {
   e.preventDefault();
-  await api.createProject({
-    name: document.getElementById('proj-name').value.trim(),
-    status: document.getElementById('proj-status').value,
-    progress: parseInt(document.getElementById('proj-progress').value) || 0
-  });
-  document.getElementById('project-form').reset();
-  closeProjectModal();
-  await loadProfissionalData();
-  renderProfissional();
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+  try {
+    await api.createProject({
+      name: document.getElementById('proj-name').value.trim(),
+      status: document.getElementById('proj-status').value,
+      progress: parseInt(document.getElementById('proj-progress').value) || 0
+    });
+    document.getElementById('project-form').reset();
+    closeProjectModal();
+    await loadProfissionalData();
+    renderProfissional();
+  } catch (err) {
+    alert('Não foi possível salvar o projeto: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function updateProjectProgress(id, delta) {
   const project = projects.find(p => p.id === id);
   if (!project) return;
   const next = Math.max(0, Math.min(100, (project.progress || 0) + delta));
-  await api.updateProject({ ...project, progress: next });
-  await loadProfissionalData();
-  renderProfissional();
+  try {
+    await api.updateProject({ ...project, progress: next });
+    await loadProfissionalData();
+    renderProfissional();
+  } catch (err) {
+    alert('Não foi possível atualizar o progresso: ' + err.message);
+  }
 }
 
 async function updateProjectStatus(id, status) {
   const project = projects.find(p => p.id === id);
   if (!project) return;
-  await api.updateProject({ ...project, status });
-  await loadProfissionalData();
-  renderProfissional();
+  try {
+    await api.updateProject({ ...project, status });
+    await loadProfissionalData();
+    renderProfissional();
+  } catch (err) {
+    alert('Não foi possível atualizar o status: ' + err.message);
+  }
 }
 
 function openTeamModal() { openModalById('team-modal'); lucide.createIcons(); }
@@ -411,14 +443,21 @@ function closeTeamModal() { closeModalById('team-modal'); }
 
 async function handleTeamSubmit(e) {
   e.preventDefault();
-  await api.createTeamMember({
-    name: document.getElementById('team-name').value.trim(),
-    role: document.getElementById('team-role').value.trim()
-  });
-  document.getElementById('team-form').reset();
-  closeTeamModal();
-  await loadProfissionalData();
-  renderProfissional();
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+  try {
+    await api.createTeamMember({
+      name: document.getElementById('team-name').value.trim(),
+      role: document.getElementById('team-role').value.trim()
+    });
+    document.getElementById('team-form').reset();
+    closeTeamModal();
+    await loadProfissionalData();
+    renderProfissional();
+  } catch (err) {
+    alert('Não foi possível adicionar o membro: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function renderGoals() {
@@ -439,30 +478,41 @@ async function updateGoalProgress(id, delta) {
   if (!goal) return;
   const target = goal.goal_target || 0;
   const next = Math.max(0, Math.min(target, (goal.goal_current || 0) + delta));
-  await api.updateTask({ ...goal, goal_current: next });
-  await loadTasks();
+  try {
+    await api.updateTask({ ...goal, goal_current: next });
+    await loadTasks();
+  } catch (err) {
+    alert('Não foi possível atualizar o progresso: ' + err.message);
+  }
 }
 function openGoalModal() { openModalById('goal-modal'); lucide.createIcons(); }
 function closeGoalModal() { closeModalById('goal-modal'); }
 async function handleGoalSubmit(e) {
   e.preventDefault();
   if (allTasks.length >= 999) return;
-  await api.createTask({
-    title: document.getElementById('g-title').value.trim(),
-    description: '',
-    priority: 'media',
-    tags: document.getElementById('g-tags').value.trim(),
-    due_date: null,
-    completed: false,
-    subtasks: '[]',
-    created_at: new Date().toISOString(),
-    type: 'goal',
-    goal_target: parseInt(document.getElementById('g-target').value) || 1,
-    goal_current: 0
-  });
-  document.getElementById('goal-form').reset();
-  closeGoalModal();
-  await loadTasks();
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+  try {
+    await api.createTask({
+      title: document.getElementById('g-title').value.trim(),
+      description: '',
+      priority: 'media',
+      tags: document.getElementById('g-tags').value.trim(),
+      due_date: null,
+      completed: false,
+      subtasks: '[]',
+      created_at: new Date().toISOString(),
+      type: 'goal',
+      goal_target: parseInt(document.getElementById('g-target').value) || 1,
+      goal_current: 0
+    });
+    document.getElementById('goal-form').reset();
+    closeGoalModal();
+    await loadTasks();
+  } catch (err) {
+    alert('Não foi possível salvar a meta: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function renderDashboard() {
@@ -522,41 +572,59 @@ async function handleSubmit(e) {
       await api.createTask({ title, description, priority, tags, due_date, completed: false, subtasks, created_at: new Date().toISOString(), type: 'task', goal_target: 0, goal_current: 0 });
     }
     await loadTasks();
+    closeModal();
+  } catch (err) {
+    alert('Não foi possível salvar a tarefa: ' + err.message);
   } finally {
-    btn.disabled = false; btn.textContent = editId ? 'Salvar' : 'Criar Tarefa'; closeModal();
+    btn.disabled = false; btn.textContent = editId ? 'Salvar' : 'Criar Tarefa';
   }
 }
 
 function editTask(id) { const task = allTasks.find(t => t.id === id); if (task) openModal(task); }
-async function toggleComplete(id) { const task = allTasks.find(t => t.id === id); if (task) { await api.updateTask({ ...task, completed: !task.completed }); await loadTasks(); } }
+async function toggleComplete(id) {
+  const task = allTasks.find(t => t.id === id);
+  if (!task) return;
+  try {
+    await api.updateTask({ ...task, completed: !task.completed });
+    await loadTasks();
+  } catch (err) {
+    alert('Não foi possível atualizar a tarefa: ' + err.message);
+  }
+}
 function promptDelete(id, type = 'task') { deleteTarget = id; deleteTargetType = type; openModalById('delete-confirm'); lucide.createIcons(); }
 function cancelDelete() { deleteTarget = null; closeModalById('delete-confirm'); }
 async function confirmDelete() {
   if (!deleteTarget) return;
   const btn = document.getElementById('confirm-delete-btn'); btn.disabled = true;
-  if (deleteTargetType === 'transaction') {
-    await api.deleteTransaction(deleteTarget);
-    await loadFinanceData();
-    renderTransactions();
-    renderFinCharts();
-  } else if (deleteTargetType === 'investment') {
-    await api.deleteInvestment(deleteTarget);
-    await loadFinanceData();
-    renderInvestmentTable();
-    renderInvestmentCharts();
-  } else if (deleteTargetType === 'project') {
-    await api.deleteProject(deleteTarget);
-    await loadProfissionalData();
-    renderProfissional();
-  } else if (deleteTargetType === 'team') {
-    await api.deleteTeamMember(deleteTarget);
-    await loadProfissionalData();
-    renderProfissional();
-  } else {
-    await api.deleteTask(deleteTarget);
-    await loadTasks();
+  try {
+    if (deleteTargetType === 'transaction') {
+      await api.deleteTransaction(deleteTarget);
+      await loadFinanceData();
+      renderTransactions();
+      renderFinCharts();
+    } else if (deleteTargetType === 'investment') {
+      await api.deleteInvestment(deleteTarget);
+      await loadFinanceData();
+      renderInvestmentTable();
+      renderInvestmentCharts();
+    } else if (deleteTargetType === 'project') {
+      await api.deleteProject(deleteTarget);
+      await loadProfissionalData();
+      renderProfissional();
+    } else if (deleteTargetType === 'team') {
+      await api.deleteTeamMember(deleteTarget);
+      await loadProfissionalData();
+      renderProfissional();
+    } else {
+      await api.deleteTask(deleteTarget);
+      await loadTasks();
+    }
+    cancelDelete();
+  } catch (err) {
+    alert('Não foi possível excluir: ' + err.message);
+  } finally {
+    btn.disabled = false;
   }
-  btn.disabled = false; cancelDelete();
 }
 function parseSubtasks(str) { try { return JSON.parse(str || '[]'); } catch { return []; } }
 
