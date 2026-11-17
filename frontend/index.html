@@ -123,11 +123,18 @@
       #sidebar-nav.mobile-open {
         display: flex !important;
         position: fixed;
-        top: 0; left: 0; bottom: 0;
+        /* Começa abaixo do header (altura medida via JS em toggleSidebar,
+           guardada em --header-h) - sem isso, o drawer cobria o header
+           inteiro, colidindo visualmente com o logo/busca. */
+        top: var(--header-h, 64px); left: 0; bottom: 0;
         z-index: 50;
         width: 16rem;
         box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+        background-color: #ffffff !important;
+        opacity: 1 !important;
       }
+      .dark #sidebar-nav.mobile-open { background-color: #1e293b !important; }
+      #sidebar-backdrop:not(.hidden) { top: var(--header-h, 64px); }
     }
     .theme-toggle .sun-icon { display: block; }
     .theme-toggle .moon-icon { display: none; }

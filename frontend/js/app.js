@@ -300,6 +300,8 @@ function setView(v) {
 function toggleSidebar() {
   const nav = document.getElementById('sidebar-nav');
   const backdrop = document.getElementById('sidebar-backdrop');
+  const header = document.querySelector('#app-shell header');
+  if (header) document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
   const isOpen = nav.classList.toggle('mobile-open');
   backdrop.classList.toggle('hidden', !isOpen);
 }
