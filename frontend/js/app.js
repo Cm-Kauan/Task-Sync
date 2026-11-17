@@ -369,6 +369,7 @@ const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho
 function renderCalHeader() { document.getElementById('cal-header').innerHTML = weekDays.map(d => `<div class="text-xs font-semibold text-slate-500 text-center py-1">${d}</div>`).join(''); }
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
+function calToday() { calDate = new Date(); calSelected = today; renderCalendar(); }
 
 function renderCalendar() {
   const year = calDate.getFullYear(), month = calDate.getMonth();
@@ -395,7 +396,11 @@ function selectCalDay(d) { calSelected = d; renderCalendar(); }
 function renderCalDayTasks() {
   const wsTasks = getTasks().filter(t => t.due_date === calSelected);
   const container = document.getElementById('cal-day-tasks');
-  if (!wsTasks.length) { container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4">Nenhuma tarefa para ${formatDate(calSelected)}.</p>`; return; }
+  if (!wsTasks.length) {
+    container.innerHTML = `<div class="text-center py-8"><div class="empty-state-icon" style="width:48px;height:48px"><i aria-hidden="true" data-lucide="calendar-check" class="w-5 h-5 text-indigo-500"></i></div><p class="text-sm text-slate-500">Nenhuma tarefa para ${formatDate(calSelected)}.</p></div>`;
+    lucide.createIcons();
+    return;
+  }
   container.innerHTML = `<p class="text-xs font-semibold text-slate-500 mb-2">${formatDate(calSelected)}</p>` + wsTasks.map(t => taskCard(t)).join('');
   lucide.createIcons();
 }
@@ -842,7 +847,11 @@ function renderTransactions() {
   if (filterPayment) filtered = filtered.filter(t => t.payment === filterPayment);
 
   const container = document.getElementById('fin-transactions');
-  if (!filtered.length) { container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">Nenhum lançamento encontrado.</p>'; return; }
+  if (!filtered.length) {
+    container.innerHTML = `<div class="text-center py-12"><div class="empty-state-icon"><i aria-hidden="true" data-lucide="receipt" class="w-7 h-7 text-emerald-500"></i></div><p class="text-slate-700 font-medium">Nenhum lançamento encontrado</p><p class="text-slate-500 text-sm mt-1">${finTransactions.length ? 'Tente ajustar os filtros acima.' : 'Adicione seu primeiro lançamento financeiro.'}</p></div>`;
+    lucide.createIcons();
+    return;
+  }
   const typeColors = { entrada: 'text-emerald-600', saida: 'text-red-600', cartao: 'text-orange-500' };
   const typeLabels = { entrada: 'Entrada', saida: 'Saída', cartao: 'Cartão' };
   const paymentLabels = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_credito: 'Cartão Crédito', cartao_debito: 'Débito', boleto: 'Boleto', transferencia: 'Transferência' };
@@ -987,6 +996,11 @@ function renderInvestmentCharts() {
 
 function renderInvestmentTable() {
   const tbody = document.getElementById('investment-table-body');
+  const table = tbody.closest('table');
+  const emptyEl = document.getElementById('investment-table-empty');
+  table.classList.toggle('hidden', !investments.length);
+  emptyEl.classList.toggle('hidden', !!investments.length);
+  if (!investments.length) { tbody.innerHTML = ''; updateInvestmentSummary(); return; }
   const typeLabels = { acoes: 'Ações', 'renda-fixa': 'Renda Fixa', cripto: 'Criptomoedas', fii: 'FII', outros: 'Outros' };
   const typeColors = { acoes: 'text-blue-600', 'renda-fixa': 'text-emerald-600', cripto: 'text-orange-600', fii: 'text-indigo-600', outros: 'text-slate-600' };
   tbody.innerHTML = investments.map(inv => {
