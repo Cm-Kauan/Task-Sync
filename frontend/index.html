@@ -94,6 +94,10 @@
     .dark .bg-white { background-color: #1e293b !important; }
     .dark .bg-slate-100 { background-color: #334155 !important; }
     .dark .bg-slate-50 { background-color: #1e293b !important; }
+    .dark .bg-white\/50 { background-color: rgba(30, 41, 59, 0.5) !important; }
+    .dark .bg-white\/80 { background-color: rgba(15, 23, 42, 0.6) !important; }
+    .dark .border-white\/20 { border-color: rgba(255,255,255,0.08) !important; }
+    .dark .hover\:bg-slate-50:hover, .dark .hover\:bg-slate-100:hover { background-color: #334155 !important; }
     .dark .text-slate-800, .dark .text-slate-700 { color: #e2e8f0 !important; }
     .dark .text-slate-600 { color: #cbd5e1 !important; }
     .dark .text-slate-500 { color: #94a3b8 !important; }
@@ -109,6 +113,22 @@
     .dark .nav-item:not(.active) { color: #cbd5e1; }
     .dark .nav-item.active { background: rgba(99,102,241,0.2); }
     .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    /* ===== Menu hambúrguer (sidebar em tela reduzida) =====
+       Em telas < 768px a nav normalmente fica "hidden" (display:none, via
+       Tailwind). Quando aberta pelo botão hambúrguer, ganha a classe
+       "mobile-open" e vira um drawer fixo por cima do conteúdo - o
+       !important garante que isso vença mesmo se a regra do Tailwind for
+       injetada depois desta, no mesmo nível de especificidade. */
+    @media (max-width: 767px) {
+      #sidebar-nav.mobile-open {
+        display: flex !important;
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        z-index: 50;
+        width: 16rem;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+      }
+    }
     .theme-toggle .sun-icon { display: block; }
     .theme-toggle .moon-icon { display: none; }
     .dark .theme-toggle .sun-icon { display: none; }
@@ -176,6 +196,7 @@
   <div id="app-shell" class="flex-col h-screen" style="display:none; height: calc(100 * min(var(--vh, 1vh), 1vh))">
     <header class="w-full px-4 md:px-6 py-3 glass border-b border-white/20 flex items-center justify-between gap-3 z-30 relative header-bg">
       <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" title="Menu" aria-label="Abrir menu de navegação" class="md:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100"><i aria-hidden="true" data-lucide="menu" class="w-5 h-5 text-slate-500"></i></button>
         <h1 class="font-bold text-xl tracking-tight heading-text">TaskSync</h1>
       </div>
       <div class="flex items-center gap-2">
@@ -194,8 +215,9 @@
         <button onclick="logout()" title="Sair" aria-label="Sair" class="p-2 rounded-lg hover:bg-slate-100"><i aria-hidden="true" data-lucide="log-out" class="w-4 h-4 text-slate-500"></i></button>
       </div>
     </header>
-    <div class="flex flex-1 overflow-hidden">
-      <nav class="hidden md:flex flex-col w-56 p-4 gap-1 border-r border-slate-100 bg-white/50">
+    <div class="flex flex-1 overflow-hidden relative">
+      <div id="sidebar-backdrop" onclick="closeSidebar()" class="hidden fixed inset-0 bg-black/40 z-40"></div>
+      <nav id="sidebar-nav" class="hidden md:flex flex-col w-56 p-4 gap-1 border-r border-slate-100 bg-white/50">
         <button class="nav-item active flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left w-full" onclick="setView('tarefas')" id="nav-tarefas"><i aria-hidden="true" data-lucide="check-square" class="w-4 h-4"></i> Tarefas</button>
         <button class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left w-full text-slate-600" onclick="setView('agenda')" id="nav-agenda"><i aria-hidden="true" data-lucide="calendar" class="w-4 h-4"></i> Agenda</button>
         <button class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left w-full text-slate-600" onclick="setView('profissional')" id="nav-profissional"><i aria-hidden="true" data-lucide="briefcase" class="w-4 h-4"></i> Profissional</button>

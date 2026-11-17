@@ -54,9 +54,13 @@ const MODAL_CLOSERS = {
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   const openModalEl = document.querySelector('.modal-overlay:not(.hidden)');
-  if (!openModalEl) return;
-  const closer = MODAL_CLOSERS[openModalEl.id];
-  if (closer) closer();
+  if (openModalEl) {
+    const closer = MODAL_CLOSERS[openModalEl.id];
+    if (closer) closer();
+    return;
+  }
+  const sidebar = document.getElementById('sidebar-nav');
+  if (sidebar && sidebar.classList.contains('mobile-open')) closeSidebar();
 });
 
 // ===== TEMA CLARO/ESCURO =====
@@ -289,6 +293,20 @@ function setView(v) {
   });
   render();
   if (v === 'financas') { renderFinCharts(); renderTransactions(); }
+  closeSidebar();
+}
+
+// ===== MENU HAMBÚRGUER (sidebar em tela reduzida) =====
+function toggleSidebar() {
+  const nav = document.getElementById('sidebar-nav');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const isOpen = nav.classList.toggle('mobile-open');
+  backdrop.classList.toggle('hidden', !isOpen);
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar-nav').classList.remove('mobile-open');
+  document.getElementById('sidebar-backdrop').classList.add('hidden');
 }
 
 function handleSearch() { searchQuery = document.getElementById('search-input').value.toLowerCase(); render(); }
