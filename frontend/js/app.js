@@ -767,65 +767,68 @@ function renderFinCharts() {
   const catEntries = Object.entries(categories);
   const catTotal = catEntries.reduce((s, [, v]) => s + v, 0);
   const canvas = document.getElementById('chart-donut');
-  if (canvas) {
+  const donutEmpty = document.getElementById('donut-empty');
+  canvas.classList.toggle('hidden', catTotal <= 0);
+  donutEmpty.classList.toggle('hidden', catTotal > 0);
+  if (canvas && catTotal > 0) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, 220, 220);
-    if (catTotal > 0) {
-      let start = -Math.PI / 2;
-      catEntries.forEach(([, v], i) => {
-        const slice = (v / catTotal) * Math.PI * 2;
-        ctx.beginPath(); ctx.moveTo(110, 110); ctx.arc(110, 110, 90, start, start + slice); ctx.closePath();
-        ctx.fillStyle = catColors[i % catColors.length]; ctx.fill();
-        start += slice;
-      });
-      ctx.beginPath(); ctx.arc(110, 110, 55, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
-      ctx.fillStyle = '#1e293b'; ctx.font = 'bold 16px DM Sans'; ctx.textAlign = 'center'; ctx.fillText('R$ ' + catTotal.toLocaleString('pt-BR'), 110, 115);
-    }
+    let start = -Math.PI / 2;
+    catEntries.forEach(([, v], i) => {
+      const slice = (v / catTotal) * Math.PI * 2;
+      ctx.beginPath(); ctx.moveTo(110, 110); ctx.arc(110, 110, 90, start, start + slice); ctx.closePath();
+      ctx.fillStyle = catColors[i % catColors.length]; ctx.fill();
+      start += slice;
+    });
+    ctx.beginPath(); ctx.arc(110, 110, 55, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 16px DM Sans'; ctx.textAlign = 'center'; ctx.fillText('R$ ' + catTotal.toLocaleString('pt-BR'), 110, 115);
   }
   document.getElementById('donut-legend').innerHTML = catEntries.map(([k], i) => `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full" style="background:${catColors[i % catColors.length]}"></span>${escapeHtml(k)}</span>`).join('');
 
   // Bar chart e line chart - historico real dos meses com lancamentos
   const totals = monthlyTotals(finTransactions).slice(-3);
   const barCanvas = document.getElementById('chart-bar');
-  if (barCanvas) {
+  const barEmpty = document.getElementById('bar-empty');
+  barCanvas.classList.toggle('hidden', !totals.length);
+  barEmpty.classList.toggle('hidden', !!totals.length);
+  if (barCanvas && totals.length) {
     const bctx = barCanvas.getContext('2d');
     bctx.clearRect(0, 0, 280, 200);
-    if (totals.length) {
-      const maxVal = Math.max(1, ...totals.map(m => Math.max(m.income, m.expenses + m.credit)));
-      const barW = 28, gap = 50, startX = 40;
-      totals.forEach((m, i) => {
-        const x = startX + i * (barW * 2 + gap);
-        const hI = (m.income / maxVal) * 140;
-        const hO = ((m.expenses + m.credit) / maxVal) * 140;
-        bctx.fillStyle = '#10b981'; bctx.beginPath(); bctx.roundRect(x, 160 - hI, barW, hI, 4); bctx.fill();
-        bctx.fillStyle = '#ef4444'; bctx.beginPath(); bctx.roundRect(x + barW + 4, 160 - hO, barW, hO, 4); bctx.fill();
-        bctx.fillStyle = '#64748b'; bctx.font = '11px DM Sans'; bctx.textAlign = 'center'; bctx.fillText(m.month.slice(5), x + barW + 2, 178);
-      });
-    }
+    const maxVal = Math.max(1, ...totals.map(m => Math.max(m.income, m.expenses + m.credit)));
+    const barW = 28, gap = 50, startX = 40;
+    totals.forEach((m, i) => {
+      const x = startX + i * (barW * 2 + gap);
+      const hI = (m.income / maxVal) * 140;
+      const hO = ((m.expenses + m.credit) / maxVal) * 140;
+      bctx.fillStyle = '#10b981'; bctx.beginPath(); bctx.roundRect(x, 160 - hI, barW, hI, 4); bctx.fill();
+      bctx.fillStyle = '#ef4444'; bctx.beginPath(); bctx.roundRect(x + barW + 4, 160 - hO, barW, hO, 4); bctx.fill();
+      bctx.fillStyle = '#64748b'; bctx.font = '11px DM Sans'; bctx.textAlign = 'center'; bctx.fillText(m.month.slice(5), x + barW + 2, 178);
+    });
     bctx.fillStyle = '#10b981'; bctx.fillRect(20, 190, 10, 6); bctx.fillStyle = '#64748b'; bctx.font = '10px DM Sans'; bctx.textAlign = 'left'; bctx.fillText('Entradas', 34, 196);
     bctx.fillStyle = '#ef4444'; bctx.fillRect(100, 190, 10, 6); bctx.fillText('Saídas', 114, 196);
   }
 
   const lineCanvas = document.getElementById('chart-line');
-  if (lineCanvas) {
+  const lineEmpty = document.getElementById('line-empty');
+  const recent = monthlyTotals(finTransactions).slice(-5);
+  lineCanvas.classList.toggle('hidden', recent.length <= 1);
+  lineEmpty.classList.toggle('hidden', recent.length > 1);
+  if (lineCanvas && recent.length > 1) {
     const lctx = lineCanvas.getContext('2d');
     lctx.clearRect(0, 0, 280, 200);
-    const recent = monthlyTotals(finTransactions).slice(-5);
-    if (recent.length > 1) {
-      const balances = recent.map(m => m.balance);
-      const maxB = Math.max(...balances) * 1.1 || 1, minB = Math.min(...balances) * 0.9;
-      lctx.beginPath(); lctx.strokeStyle = '#6366f1'; lctx.lineWidth = 2.5;
-      recent.forEach((m, i) => {
-        const x = 30 + i * (250 / (recent.length - 1)), y = 160 - ((m.balance - minB) / (maxB - minB || 1)) * 130;
-        if (i === 0) lctx.moveTo(x, y); else lctx.lineTo(x, y);
-      });
-      lctx.stroke();
-      recent.forEach((m, i) => {
-        const x = 30 + i * (250 / (recent.length - 1)), y = 160 - ((m.balance - minB) / (maxB - minB || 1)) * 130;
-        lctx.beginPath(); lctx.arc(x, y, 4, 0, Math.PI * 2); lctx.fillStyle = '#6366f1'; lctx.fill();
-        lctx.fillStyle = '#64748b'; lctx.font = '10px DM Sans'; lctx.textAlign = 'center'; lctx.fillText(m.month.slice(5), x, 178);
-      });
-    }
+    const balances = recent.map(m => m.balance);
+    const maxB = Math.max(...balances) * 1.1 || 1, minB = Math.min(...balances) * 0.9;
+    lctx.beginPath(); lctx.strokeStyle = '#6366f1'; lctx.lineWidth = 2.5;
+    recent.forEach((m, i) => {
+      const x = 30 + i * (250 / (recent.length - 1)), y = 160 - ((m.balance - minB) / (maxB - minB || 1)) * 130;
+      if (i === 0) lctx.moveTo(x, y); else lctx.lineTo(x, y);
+    });
+    lctx.stroke();
+    recent.forEach((m, i) => {
+      const x = 30 + i * (250 / (recent.length - 1)), y = 160 - ((m.balance - minB) / (maxB - minB || 1)) * 130;
+      lctx.beginPath(); lctx.arc(x, y, 4, 0, Math.PI * 2); lctx.fillStyle = '#6366f1'; lctx.fill();
+      lctx.fillStyle = '#64748b'; lctx.font = '10px DM Sans'; lctx.textAlign = 'center'; lctx.fillText(m.month.slice(5), x, 178);
+    });
   }
 }
 
@@ -936,46 +939,49 @@ function renderInvestmentCharts() {
   const totalApplied = investments.reduce((s, i) => s + i.applied, 0);
   const totalCurrent = investments.reduce((s, i) => s + i.current, 0);
 
+  const hasInvestments = totalApplied > 0 || totalCurrent > 0;
   const canvas = document.getElementById('chart-investment');
-  if (canvas) {
+  const canvasEmpty = document.getElementById('chart-investment-empty');
+  canvas.classList.toggle('hidden', !hasInvestments);
+  canvasEmpty.classList.toggle('hidden', hasInvestments);
+  if (canvas && hasInvestments) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, 240, 180);
-    if (totalApplied > 0 || totalCurrent > 0) {
-      const w = 50, h = 120, gap = 20, startX = 40;
-      const maxV = Math.max(totalApplied, totalCurrent, 1);
-      ctx.fillStyle = '#6366f1'; ctx.beginPath(); ctx.roundRect(startX, h - (totalApplied / maxV * h), w, (totalApplied / maxV * h), 4); ctx.fill();
-      ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.roundRect(startX + w + gap, h - (totalCurrent / maxV * h), w, (totalCurrent / maxV * h), 4); ctx.fill();
-      ctx.fillStyle = '#64748b'; ctx.font = 'bold 12px DM Sans'; ctx.textAlign = 'center';
-      ctx.fillText('Aplicado', startX + w/2, h + 15);
-      ctx.fillText('Atual', startX + w + gap + w/2, h + 15);
-      ctx.fillStyle = '#1e293b'; ctx.font = 'bold 10px DM Sans'; ctx.textAlign = 'center';
-      ctx.fillText('R$ ' + totalApplied.toLocaleString('pt-BR'), startX + w/2, h - (totalApplied / maxV * h) - 5);
-      ctx.fillText('R$ ' + totalCurrent.toLocaleString('pt-BR'), startX + w + gap + w/2, h - (totalCurrent / maxV * h) - 5);
-    }
+    const w = 50, h = 120, gap = 20, startX = 40;
+    const maxV = Math.max(totalApplied, totalCurrent, 1);
+    ctx.fillStyle = '#6366f1'; ctx.beginPath(); ctx.roundRect(startX, h - (totalApplied / maxV * h), w, (totalApplied / maxV * h), 4); ctx.fill();
+    ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.roundRect(startX + w + gap, h - (totalCurrent / maxV * h), w, (totalCurrent / maxV * h), 4); ctx.fill();
+    ctx.fillStyle = '#64748b'; ctx.font = 'bold 12px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText('Aplicado', startX + w/2, h + 15);
+    ctx.fillText('Atual', startX + w + gap + w/2, h + 15);
+    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 10px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText('R$ ' + totalApplied.toLocaleString('pt-BR'), startX + w/2, h - (totalApplied / maxV * h) - 5);
+    ctx.fillText('R$ ' + totalCurrent.toLocaleString('pt-BR'), startX + w + gap + w/2, h - (totalCurrent / maxV * h) - 5);
   }
 
   // Evolucao: total acumulado (aplicado x atual) ordenado pelo mes de aplicacao
   const lineCanvas = document.getElementById('chart-investment-line');
-  if (lineCanvas) {
+  const lineCanvasEmpty = document.getElementById('chart-investment-line-empty');
+  const sorted = [...investments].filter(i => i.month).sort((a, b) => a.month.localeCompare(b.month));
+  lineCanvas.classList.toggle('hidden', sorted.length <= 1);
+  lineCanvasEmpty.classList.toggle('hidden', sorted.length > 1);
+  if (lineCanvas && sorted.length > 1) {
     const lctx = lineCanvas.getContext('2d');
     lctx.clearRect(0, 0, 240, 180);
-    const sorted = [...investments].filter(i => i.month).sort((a, b) => a.month.localeCompare(b.month));
-    if (sorted.length > 1) {
-      let running = 0;
-      const points = sorted.map(i => { running += i.current; return running; });
-      const maxE = Math.max(...points) * 1.1, minE = Math.min(...points) * 0.8;
-      lctx.beginPath(); lctx.strokeStyle = '#8b5cf6'; lctx.lineWidth = 2.5;
-      points.forEach((v, i) => {
-        const x = 30 + i * (200 / (points.length - 1)), y = 140 - ((v - minE) / (maxE - minE || 1)) * 110;
-        if (i === 0) lctx.moveTo(x, y); else lctx.lineTo(x, y);
-      });
-      lctx.stroke();
-      points.forEach((v, i) => {
-        const x = 30 + i * (200 / (points.length - 1)), y = 140 - ((v - minE) / (maxE - minE || 1)) * 110;
-        lctx.beginPath(); lctx.arc(x, y, 3, 0, Math.PI * 2); lctx.fillStyle = '#8b5cf6'; lctx.fill();
-        lctx.fillStyle = '#64748b'; lctx.font = '10px DM Sans'; lctx.textAlign = 'center'; lctx.fillText(sorted[i].month.slice(5), x, 160);
-      });
-    }
+    let running = 0;
+    const points = sorted.map(i => { running += i.current; return running; });
+    const maxE = Math.max(...points) * 1.1, minE = Math.min(...points) * 0.8;
+    lctx.beginPath(); lctx.strokeStyle = '#8b5cf6'; lctx.lineWidth = 2.5;
+    points.forEach((v, i) => {
+      const x = 30 + i * (200 / (points.length - 1)), y = 140 - ((v - minE) / (maxE - minE || 1)) * 110;
+      if (i === 0) lctx.moveTo(x, y); else lctx.lineTo(x, y);
+    });
+    lctx.stroke();
+    points.forEach((v, i) => {
+      const x = 30 + i * (200 / (points.length - 1)), y = 140 - ((v - minE) / (maxE - minE || 1)) * 110;
+      lctx.beginPath(); lctx.arc(x, y, 3, 0, Math.PI * 2); lctx.fillStyle = '#8b5cf6'; lctx.fill();
+      lctx.fillStyle = '#64748b'; lctx.font = '10px DM Sans'; lctx.textAlign = 'center'; lctx.fillText(sorted[i].month.slice(5), x, 160);
+    });
   }
 }
 

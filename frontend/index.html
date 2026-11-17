@@ -136,6 +136,23 @@
       .dark #sidebar-nav.mobile-open { background-color: #1e293b !important; }
       #sidebar-backdrop:not(.hidden) { top: var(--header-h, 64px); }
     }
+    /* ===== Cards de estatística, selos de seção e estados vazios =====
+       Componentes reutilizados em Tarefas/Agenda/Profissional/Metas/
+       Dashboard/Finanças, pra dar uma identidade visual única ao app em
+       vez de cada aba ter um estilo de card ligeiramente diferente. */
+    .stat-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 16px; transition: all 0.2s ease; display: flex; align-items: center; gap: 12px; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+    .dark .stat-card { background: #1e293b; border-color: #334155; }
+    .stat-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .stat-value { font-size: 1.375rem; font-weight: 700; line-height: 1.15; color: rgb(30, 41, 59); }
+    .dark .stat-value { color: #f1f5f9; }
+    .stat-label { font-size: 0.72rem; color: #64748b; margin-top: 1px; }
+    .dark .stat-label { color: #94a3b8; }
+    .section-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(99,102,241,0.12); color: #6366f1; }
+    .dark .section-icon { background: rgba(99,102,241,0.2); }
+    .empty-state-icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(99,102,241,0.08); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+    .dark .empty-state-icon { background: rgba(99,102,241,0.15); }
+    .chart-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; color: #94a3b8; font-size: 0.8rem; text-align: center; gap: 6px; }
     .theme-toggle .sun-icon { display: block; }
     .theme-toggle .moon-icon { display: none; }
     .dark .theme-toggle .sun-icon { display: none; }
@@ -248,18 +265,20 @@
         <!-- Tasks View -->
         <section id="view-tarefas" class="fade-in">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg heading-text">Minhas Tarefas</h2><span id="task-count" class="text-sm text-slate-500"></span>
+            <div class="flex items-center gap-2.5"><div class="section-icon"><i aria-hidden="true" data-lucide="check-square" class="w-4 h-4"></i></div><h2 class="font-semibold text-lg heading-text">Minhas Tarefas</h2></div>
+            <span id="task-count" class="text-sm text-slate-500"></span>
           </div>
           <div id="task-list" class="grid gap-3"></div>
           <div id="empty-state" class="hidden text-center py-16">
-            <i aria-hidden="true" data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
-            <p class="text-slate-500">Nenhuma tarefa encontrada. Crie uma nova!</p>
+            <div class="empty-state-icon"><i aria-hidden="true" data-lucide="inbox" class="w-7 h-7 text-indigo-500"></i></div>
+            <p class="text-slate-700 font-medium">Nenhuma tarefa por aqui</p>
+            <p class="text-slate-500 text-sm mt-1">Crie a primeira tarefa pra começar a organizar seu dia.</p>
           </div>
         </section>
         <!-- Agenda View -->
         <section id="view-agenda" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg heading-text">Agenda</h2>
+            <div class="flex items-center gap-2.5"><div class="section-icon"><i aria-hidden="true" data-lucide="calendar" class="w-4 h-4"></i></div><h2 class="font-semibold text-lg heading-text">Agenda</h2></div>
             <div class="flex items-center gap-2">
               <button onclick="calPrev()" aria-label="Mês anterior" class="p-1.5 rounded-lg hover:bg-slate-100"><i aria-hidden="true" data-lucide="chevron-left" class="w-5 h-5 text-slate-600"></i></button>
               <span id="cal-month-label" class="text-sm font-semibold text-slate-700 min-w-[140px] text-center"></span>
@@ -275,13 +294,13 @@
         <!-- Profissional View -->
         <section id="view-profissional" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg heading-text">Profissional</h2>
+            <div class="flex items-center gap-2.5"><div class="section-icon"><i aria-hidden="true" data-lucide="briefcase" class="w-4 h-4"></i></div><h2 class="font-semibold text-lg heading-text">Profissional</h2></div>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div class="pro-card rounded-xl p-4 text-center"><p class="text-2xl font-bold text-blue-600" id="pro-projects">0</p><p class="text-xs text-slate-500 mt-1">Projetos</p></div>
-            <div class="pro-card rounded-xl p-4 text-center"><p class="text-2xl font-bold text-amber-600" id="pro-active">0</p><p class="text-xs text-slate-500 mt-1">Em Andamento</p></div>
-            <div class="pro-card rounded-xl p-4 text-center"><p class="text-2xl font-bold text-green-600" id="pro-completed">0</p><p class="text-xs text-slate-500 mt-1">Concluídos</p></div>
-            <div class="pro-card rounded-xl p-4 text-center"><p class="text-2xl font-bold text-indigo-600" id="pro-team">0</p><p class="text-xs text-slate-500 mt-1">Membros</p></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(59,130,246,0.12);color:#3b82f6"><i aria-hidden="true" data-lucide="folder-kanban" class="w-5 h-5"></i></div><div><p class="stat-value" id="pro-projects">0</p><p class="stat-label">Projetos</p></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b"><i aria-hidden="true" data-lucide="activity" class="w-5 h-5"></i></div><div><p class="stat-value" id="pro-active">0</p><p class="stat-label">Em Andamento</p></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(34,197,94,0.12);color:#22c55e"><i aria-hidden="true" data-lucide="check-circle-2" class="w-5 h-5"></i></div><div><p class="stat-value" id="pro-completed">0</p><p class="stat-label">Concluídos</p></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(99,102,241,0.12);color:#6366f1"><i aria-hidden="true" data-lucide="users" class="w-5 h-5"></i></div><div><p class="stat-value" id="pro-team">0</p><p class="stat-label">Membros</p></div></div>
           </div>
           <div class="mb-6">
             <div class="flex items-center justify-between mb-3">
@@ -303,23 +322,24 @@
         <!-- Metas View -->
         <section id="view-metas" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg heading-text">Metas &amp; Objetivos</h2>
+            <div class="flex items-center gap-2.5"><div class="section-icon"><i aria-hidden="true" data-lucide="target" class="w-4 h-4"></i></div><h2 class="font-semibold text-lg heading-text">Metas &amp; Objetivos</h2></div>
             <button onclick="openGoalModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-all hover:shadow-lg" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)"><i aria-hidden="true" data-lucide="plus" class="w-4 h-4"></i> Nova Meta</button>
           </div>
           <div id="goals-list" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
           <div id="goals-empty" class="hidden text-center py-16">
-            <i aria-hidden="true" data-lucide="target" class="w-12 h-12 mx-auto text-slate-300 mb-3"></i>
-            <p class="text-slate-500 text-sm">Nenhuma meta cadastrada ainda.</p>
+            <div class="empty-state-icon"><i aria-hidden="true" data-lucide="target" class="w-7 h-7 text-indigo-500"></i></div>
+            <p class="text-slate-700 font-medium">Nenhuma meta ainda</p>
+            <p class="text-slate-500 text-sm mt-1">Defina um objetivo e acompanhe o progresso por aqui.</p>
           </div>
         </section>
         <!-- Dashboard View -->
         <section id="view-dashboard" class="fade-in hidden">
-          <h2 class="font-semibold text-lg mb-4 heading-text">Dashboard</h2>
+          <div class="flex items-center gap-2.5 mb-4"><div class="section-icon"><i aria-hidden="true" data-lucide="bar-chart-2" class="w-4 h-4"></i></div><h2 class="font-semibold text-lg heading-text">Dashboard</h2></div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div class="metric-card glass rounded-xl p-4 text-center"><p class="text-2xl font-bold text-indigo-600" id="metric-total">0</p><p class="text-xs text-slate-500 mt-1">Total</p></div>
-            <div class="metric-card glass rounded-xl p-4 text-center"><p class="text-2xl font-bold text-green-600" id="metric-done">0</p><p class="text-xs text-slate-500 mt-1">Concluídas</p></div>
-            <div class="metric-card glass rounded-xl p-4 text-center"><p class="text-2xl font-bold text-amber-600" id="metric-pending">0</p><p class="text-xs text-slate-500 mt-1">Pendentes</p></div>
-            <div class="metric-card glass rounded-xl p-4 text-center"><p class="text-2xl font-bold text-red-600" id="metric-overdue">0</p><p class="text-xs text-slate-500 mt-1">Atrasadas</p></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(99,102,241,0.12);color:#6366f1"><i aria-hidden="true" data-lucide="list-checks" class="w-5 h-5"></i></div><div><p class="stat-value" id="metric-total">0</p><p class="stat-label">Total</p></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(34,197,94,0.12);color:#22c55e"><i aria-hidden="true" data-lucide="check-circle-2" class="w-5 h-5"></i></div><div><p class="stat-value" id="metric-done">0</p><p class="stat-label">Concluídas</p></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b"><i aria-hidden="true" data-lucide="clock" class="w-5 h-5"></i></div><div><p class="stat-value" id="metric-pending">0</p><p class="stat-label">Pendentes</p></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,0.12);color:#ef4444"><i aria-hidden="true" data-lucide="alert-circle" class="w-5 h-5"></i></div><div><p class="stat-value" id="metric-overdue">0</p><p class="stat-label">Atrasadas</p></div></div>
           </div>
           <div class="glass rounded-xl p-4">
             <p class="text-sm font-semibold text-slate-700 mb-3">Progresso Geral</p>
@@ -332,7 +352,7 @@
         <!-- Finanças View -->
         <section id="view-financas" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg heading-text">Finanças</h2>
+            <div class="flex items-center gap-2.5"><div class="section-icon" style="background:rgba(16,185,129,0.12);color:#10b981"><i aria-hidden="true" data-lucide="wallet" class="w-4 h-4"></i></div><h2 class="font-semibold text-lg heading-text">Finanças</h2></div>
             <button onclick="finExport()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-all hover:shadow-lg" style="background:linear-gradient(135deg,#10b981,#059669)"><i aria-hidden="true" data-lucide="download" class="w-4 h-4"></i> Exportar PDF</button>
           </div>
           <div class="flex gap-2 mb-5">
@@ -343,24 +363,27 @@
           </div>
           <div id="fin-resumo" class="fade-in">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              <div class="fin-card p-4 text-center"><p class="text-xs text-slate-500 mb-1">Renda Total</p><p id="fin-income" class="text-xl font-bold text-emerald-600">R$ 0</p></div>
-              <div class="fin-card p-4 text-center"><p class="text-xs text-slate-500 mb-1">Saídas</p><p id="fin-expenses" class="text-xl font-bold text-red-600">R$ 0</p></div>
-              <div class="fin-card p-4 text-center"><p class="text-xs text-slate-500 mb-1">Cartão Crédito</p><p id="fin-credit" class="text-xl font-bold text-orange-500">R$ 0</p></div>
-              <div class="fin-card p-4 text-center"><p class="text-xs text-slate-500 mb-1">Saldo</p><p id="fin-balance" class="text-xl font-bold text-indigo-600">R$ 0</p></div>
+              <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.12);color:#10b981"><i aria-hidden="true" data-lucide="trending-up" class="w-5 h-5"></i></div><div><p class="stat-value" id="fin-income">R$ 0</p><p class="stat-label">Renda Total</p></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,0.12);color:#ef4444"><i aria-hidden="true" data-lucide="trending-down" class="w-5 h-5"></i></div><div><p class="stat-value" id="fin-expenses">R$ 0</p><p class="stat-label">Saídas</p></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:rgba(249,115,22,0.12);color:#f97316"><i aria-hidden="true" data-lucide="credit-card" class="w-5 h-5"></i></div><div><p class="stat-value" id="fin-credit">R$ 0</p><p class="stat-label">Cartão Crédito</p></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:rgba(99,102,241,0.12);color:#6366f1"><i aria-hidden="true" data-lucide="wallet" class="w-5 h-5"></i></div><div><p class="stat-value" id="fin-balance">R$ 0</p><p class="stat-label">Saldo</p></div></div>
             </div>
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               <div class="glass rounded-xl p-4">
                 <p class="text-sm font-semibold text-slate-700 mb-3">Despesas por Categoria</p>
                 <canvas id="chart-donut" width="220" height="220" class="mx-auto"></canvas>
+                <div id="donut-empty" class="chart-empty hidden"><i aria-hidden="true" data-lucide="pie-chart" class="w-8 h-8 text-slate-500 opacity-50"></i>Nenhuma despesa este mês ainda</div>
                 <div id="donut-legend" class="flex flex-wrap gap-2 mt-3 justify-center text-xs"></div>
               </div>
               <div class="glass rounded-xl p-4">
                 <p class="text-sm font-semibold text-slate-700 mb-3">Entradas vs Saídas</p>
                 <canvas id="chart-bar" width="280" height="200" class="mx-auto"></canvas>
+                <div id="bar-empty" class="chart-empty hidden"><i aria-hidden="true" data-lucide="bar-chart-2" class="w-8 h-8 text-slate-500 opacity-50"></i>Nenhum lançamento registrado ainda</div>
               </div>
               <div class="glass rounded-xl p-4">
                 <p class="text-sm font-semibold text-slate-700 mb-3">Evolução do Saldo</p>
                 <canvas id="chart-line" width="280" height="200" class="mx-auto"></canvas>
+                <div id="line-empty" class="chart-empty hidden"><i aria-hidden="true" data-lucide="trending-up" class="w-8 h-8 text-slate-500 opacity-50"></i>Registre lançamentos em pelo menos 2 meses para ver a evolução</div>
               </div>
             </div>
           </div>
@@ -387,10 +410,12 @@
               <div class="glass rounded-xl p-4">
                 <p class="text-sm font-semibold text-slate-700 mb-3">Investimentos vs. Aplicações</p>
                 <canvas id="chart-investment" width="240" height="180" class="mx-auto"></canvas>
+                <div id="chart-investment-empty" class="chart-empty hidden"><i aria-hidden="true" data-lucide="pie-chart" class="w-8 h-8 text-slate-500 opacity-50"></i>Nenhum investimento cadastrado ainda</div>
               </div>
               <div class="glass rounded-xl p-4">
                 <p class="text-sm font-semibold text-slate-700 mb-3">Evolução de Investimentos</p>
                 <canvas id="chart-investment-line" width="240" height="180" class="mx-auto"></canvas>
+                <div id="chart-investment-line-empty" class="chart-empty hidden"><i aria-hidden="true" data-lucide="trending-up" class="w-8 h-8 text-slate-500 opacity-50"></i>Nenhum investimento cadastrado ainda</div>
               </div>
             </div>
             <div class="glass rounded-xl p-4 mb-4 overflow-x-auto">
