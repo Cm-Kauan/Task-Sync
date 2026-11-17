@@ -1,6 +1,7 @@
 package com.tasksync.backend.controller;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 
@@ -26,7 +27,9 @@ import com.tasksync.backend.model.User;
 import com.tasksync.backend.repository.UserRepository;
 import com.tasksync.backend.security.CustomUserDetailsService;
 import com.tasksync.backend.security.JwtService;
+import com.tasksync.backend.security.RateLimiterService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -36,12 +39,22 @@ public class AuthController {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int CODE_VALIDITY_MINUTES = 15;
 
+    // Limites escolhidos para dificultar força bruta/abuso sem incomodar o
+    // uso normal: ninguém erra a senha ou pede reenvio de código mais que
+    // algumas vezes em 15 minutos no uso legítimo.
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final int MAX_VERIFICATION_CODE_REQUESTS = 3;
+    private static final int MAX_REGISTRATIONS_PER_IP = 5;
+    private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(15);
+    private static final Duration REGISTER_RATE_LIMIT_WINDOW = Duration.ofHours(1);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
     private final EmailService emailService;
+    private final RateLimiterService rateLimiterService;
 
     public AuthController(
             UserRepository userRepository,
@@ -49,7 +62,8 @@ public class AuthController {
             JwtService jwtService,
             AuthenticationManager authenticationManager,
             CustomUserDetailsService userDetailsService,
-            EmailService emailService
+            EmailService emailService,
+            RateLimiterService rateLimiterService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -57,10 +71,24 @@ public class AuthController {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.emailService = emailService;
+        this.rateLimiterService = rateLimiterService;
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiterService.allow("register:" + clientIp(httpRequest), MAX_REGISTRATIONS_PER_IP, REGISTER_RATE_LIMIT_WINDOW)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Muitos cadastros feitos a partir deste endereço. Tente novamente mais tarde.");
+        }
+
         if (userRepository.existsByEmail(request.email())) {
             return ResponseEntity.badRequest().body("Já existe uma conta com este e-mail.");
         }
@@ -81,6 +109,11 @@ public class AuthController {
 
     @PostMapping("/send-verification-code")
     public ResponseEntity<?> sendVerificationCode(@Valid @RequestBody SendVerificationCodeRequest request) {
+        if (!rateLimiterService.allow("send-code:" + request.email(), MAX_VERIFICATION_CODE_REQUESTS, RATE_LIMIT_WINDOW)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Muitos pedidos de código para este e-mail. Aguarde alguns minutos e tente novamente.");
+        }
+
         User user = userRepository.findByEmail(request.email()).orElse(null);
         if (user == null) {
             return ResponseEntity.badRequest().body("Usuário não encontrado.");
@@ -109,6 +142,11 @@ public class AuthController {
 
     @PostMapping("/verify-code")
     public ResponseEntity<?> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
+        if (!rateLimiterService.allow("verify-code:" + request.email(), MAX_LOGIN_ATTEMPTS, RATE_LIMIT_WINDOW)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Muitas tentativas de verificação para este e-mail. Aguarde alguns minutos e tente novamente.");
+        }
+
         User user = userRepository.findByEmail(request.email()).orElse(null);
         if (user == null) {
             return ResponseEntity.badRequest().body("Usuário não encontrado.");
@@ -136,6 +174,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        if (!rateLimiterService.allow("login:" + request.email(), MAX_LOGIN_ATTEMPTS, RATE_LIMIT_WINDOW)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Muitas tentativas de login para este e-mail. Aguarde alguns minutos e tente novamente.");
+        }
+
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())

@@ -7,6 +7,31 @@ const API_BASE_URL = ["localhost", "127.0.0.1"].includes(window.location.hostnam
 const TOKEN_KEY = "tasksync_token";
 const USER_KEY = "tasksync_user";
 
+// Mensagens genéricas para quando o backend não devolve um texto amigável
+// (ex.: o JSON padrão de erro do Spring Boot, tipo
+// {"timestamp":...,"status":500,"error":"Internal Server Error",...}).
+// A maioria das rotas de auth já devolve uma frase pronta em português
+// (ex.: "Já existe uma conta com este e-mail.") - essa função só entra
+// quando o corpo da resposta não é um texto útil pra mostrar ao usuário.
+const FRIENDLY_STATUS_MESSAGES = {
+    400: "Dados inválidos. Confira os campos e tente novamente.",
+    401: "Não foi possível autenticar. Confira os dados e tente novamente.",
+    403: "Você não tem permissão para fazer isso.",
+    404: "Não encontrado.",
+    429: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+    500: "Algo deu errado no servidor. Tente novamente em instantes.",
+    501: "Esse recurso ainda não está disponível.",
+};
+
+function looksLikeSpringErrorJson(text) {
+    try {
+        const parsed = JSON.parse(text);
+        return parsed !== null && typeof parsed === "object" && ("timestamp" in parsed || "status" in parsed);
+    } catch {
+        return false;
+    }
+}
+
 async function request(path, options = {}) {
     const token = localStorage.getItem(TOKEN_KEY);
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -15,7 +40,12 @@ async function request(path, options = {}) {
     const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
     if (!response.ok) {
         const text = await response.text().catch(() => "");
-        throw new Error(text || `Erro ${response.status} ao chamar ${path}`);
+        const message = text && !looksLikeSpringErrorJson(text)
+            ? text
+            : (FRIENDLY_STATUS_MESSAGES[response.status] || `Erro ${response.status} ao chamar ${path}`);
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
     }
     // DELETE (e algumas outras respostas) podem vir com corpo vazio mesmo em
     // status 200 - response.json() quebra nesse caso, então checamos o texto
