@@ -9,6 +9,28 @@ entrada nova vai no topo, abaixo de "Não lançado".
 - Espaço para o que estiver em andamento — atualizar conforme o plano de
   evolução em `docs/arquitetura/06-debito-tecnico-roadmap.md` avançar.
 
+## 2026-11-17 — Plano de evolução de 5 dias (segurança, acessibilidade, UX)
+
+- **Dia 1**: associa `Task`, `Transaction`, `Investment`, `Project` e
+  `TeamMember` ao usuário logado (`user_id`); remove essas rotas do
+  `permitAll`. Antes dessa mudança, qualquer pessoa com a URL via/editava
+  dados de qualquer usuário.
+- **Dia 2**: corrige XSS armazenado (dado do usuário era inserido via
+  `innerHTML` sem escapar); restringe CORS à URL exata de produção;
+  exige senha mais forte (8+ caracteres, letra e número).
+- **Dia 3**: adiciona rate limiting em login, verificação de código,
+  reenvio de código e cadastro; reduz expiração do JWT de 24h para 2h;
+  traduz erros técnicos do backend em mensagens amigáveis no frontend.
+- **Dia 4**: acessibilidade - `aria-label`/`aria-hidden` em toda a
+  interface, gerenciamento de foco em todos os modais (com Esc para
+  fechar), `aria-live` nas regiões de erro/toast, contraste de cores
+  corrigido para atender WCAG AA.
+- **Dia 5**: estados de carregamento em todas as ações que chamam a API;
+  corrige dois bugs onde o modal fechava mesmo quando a ação falhava
+  (escondendo o erro do usuário); aviso visível caso o CDN do
+  Tailwind/Lucide fique indisponível; teste de regressão completo
+  ponta a ponta.
+
 ## 2026-08-22
 
 - Troca o envio de e-mail de SMTP para a API HTTP da Brevo — o Railway
