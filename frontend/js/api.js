@@ -55,6 +55,9 @@ async function request(path, options = {}) {
 }
 
 const api = {
+    fetchProfile: () => request("/api/me"),
+    updateProfile: (data) => request("/api/me", { method: "PUT", body: JSON.stringify(data) }),
+
     register: (data) => request("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
     login: (data) => request("/api/auth/login", { method: "POST", body: JSON.stringify(data) }),
     sendVerificationCode: (data) => request("/api/auth/send-verification-code", { method: "POST", body: JSON.stringify(data) }),

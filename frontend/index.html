@@ -4,8 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TaskSync</title>
+  <script>
+    // Aplica o tema salvo ANTES do resto da página carregar, pra não piscar
+    // claro->escuro (FOUC) quando o usuário já escolheu "escuro" antes.
+    (function () {
+      const saved = localStorage.getItem('tasksync_theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
+    })();
+  </script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%9C%85</text></svg>">
   <script src="https://cdn.tailwindcss.com/3.4.17" onerror="window.__cdnFailed=true"></script>
+  <script>
+    // Ativa o modo "dark" via classe (em vez do padrão, que segue a
+    // preferência do SO) - assim o botão de tema no header controla isso
+    // manualmente, independente da configuração do sistema operacional.
+    if (window.tailwind) tailwind.config = { darkMode: 'class' };
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" onerror="window.__cdnFailed=true"></script>
   <!--
     Fallback simples caso o CDN do Tailwind/Lucide esteja fora do ar ou
@@ -61,14 +76,51 @@
     .auth-tab.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
     .channel-btn.active { border-color: #6366f1; background: rgba(99,102,241,0.08); }
     .channel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ===== Tema claro/escuro =====
+       Em vez de espalhar "dark:" em centenas de classes utilitárias (o
+       projeto usa muito estilo inline para gradientes/cores que o Tailwind
+       não enxerga), sobrescrevemos aqui as classes/elementos mais usados
+       sob escopo ".dark" - cobre a grande maioria da interface com pouco
+       código, ao custo de não ser 100% granular em cada elemento. */
+    .page-bg { background: linear-gradient(135deg, rgb(240, 244, 255), rgb(232, 236, 248)); min-height: 100vh; transition: background 0.2s ease; }
+    .dark .page-bg { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .heading-text { color: rgb(30, 41, 59); }
+    .dark .heading-text { color: #f1f5f9; }
+    .header-bg { background: rgba(255, 255, 255, 0.72); }
+    .dark .glass { background: rgba(30, 41, 59, 0.72); border-color: rgba(255,255,255,0.08); }
+    .dark .header-bg { background: rgba(30, 41, 59, 0.82) !important; }
+    .dark body { color: #cbd5e1; }
+    .dark .bg-white { background-color: #1e293b !important; }
+    .dark .bg-slate-100 { background-color: #334155 !important; }
+    .dark .bg-slate-50 { background-color: #1e293b !important; }
+    .dark .text-slate-800, .dark .text-slate-700 { color: #e2e8f0 !important; }
+    .dark .text-slate-600 { color: #cbd5e1 !important; }
+    .dark .text-slate-500 { color: #94a3b8 !important; }
+    .dark .border-slate-200, .dark .border-slate-100 { border-color: #334155 !important; }
+    .dark input, .dark select, .dark textarea {
+      background-color: #0f172a; color: #e2e8f0; border-color: #334155 !important;
+    }
+    .dark input::placeholder, .dark textarea::placeholder { color: #64748b; }
+    .dark .pro-card { background: linear-gradient(135deg, #1e293b, #1e1b4b); border-color: #334155; }
+    .dark .fin-card { background: linear-gradient(135deg, #1e293b, #0f2922); border-color: #334155; }
+    .dark .fin-tab:not(.active) { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+    .dark .modal-overlay { background: rgba(0,0,0,0.65); }
+    .dark .nav-item:not(.active) { color: #cbd5e1; }
+    .dark .nav-item.active { background: rgba(99,102,241,0.2); }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    .theme-toggle .sun-icon { display: block; }
+    .theme-toggle .moon-icon { display: none; }
+    .dark .theme-toggle .sun-icon { display: none; }
+    .dark .theme-toggle .moon-icon { display: block; }
   </style>
 </head>
-<body class="w-full min-h-screen" style="background: linear-gradient(135deg, rgb(240, 244, 255), rgb(232, 236, 248));">
+<body class="w-full min-h-screen page-bg">
 
   <!-- Auth Screen -->
   <div id="auth-screen" class="min-h-screen items-center justify-center p-4" style="display:flex">
     <div class="glass rounded-2xl shadow-2xl w-full max-w-md p-6 md:p-8 fade-in">
-      <h1 class="font-bold text-2xl text-center mb-1" style="color: rgb(30, 41, 59);">TaskSync</h1>
+      <h1 class="font-bold text-2xl text-center mb-1 heading-text">TaskSync</h1>
       <p class="text-sm text-slate-500 text-center mb-6">Gestão de tarefas, finanças e projetos</p>
 
       <!-- Login / Cadastro tabs -->
@@ -122,9 +174,9 @@
   </div>
 
   <div id="app-shell" class="flex-col h-screen" style="display:none; height: calc(100 * min(var(--vh, 1vh), 1vh))">
-    <header class="w-full px-4 md:px-6 py-3 glass border-b border-white/20 flex items-center justify-between gap-3 z-30 relative" style="background: rgba(255, 255, 255, 0.72);">
+    <header class="w-full px-4 md:px-6 py-3 glass border-b border-white/20 flex items-center justify-between gap-3 z-30 relative header-bg">
       <div class="flex items-center gap-3">
-        <h1 class="font-bold text-xl tracking-tight" style="color: rgb(30, 41, 59);">TaskSync</h1>
+        <h1 class="font-bold text-xl tracking-tight heading-text">TaskSync</h1>
       </div>
       <div class="flex items-center gap-2">
         <div class="relative hidden sm:block">
@@ -134,7 +186,11 @@
         <button onclick="openModal()" aria-label="Nova Tarefa" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-all hover:shadow-lg" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
           <i aria-hidden="true" data-lucide="plus" class="w-4 h-4"></i><span class="hidden sm:inline">Nova Tarefa</span>
         </button>
-        <span id="logged-user-name" class="hidden sm:inline text-sm text-slate-500"></span>
+        <button onclick="toggleTheme()" title="Alternar tema" aria-label="Alternar tema claro/escuro" class="theme-toggle p-2 rounded-lg hover:bg-slate-100">
+          <i aria-hidden="true" data-lucide="sun" class="sun-icon w-4 h-4 text-slate-500"></i>
+          <i aria-hidden="true" data-lucide="moon" class="moon-icon w-4 h-4 text-slate-500"></i>
+        </button>
+        <button onclick="openProfileModal()" id="logged-user-name" title="Perfil" class="hidden sm:inline text-sm text-slate-500 hover:text-indigo-600 px-1"></button>
         <button onclick="logout()" title="Sair" aria-label="Sair" class="p-2 rounded-lg hover:bg-slate-100"><i aria-hidden="true" data-lucide="log-out" class="w-4 h-4 text-slate-500"></i></button>
       </div>
     </header>
@@ -163,7 +219,7 @@
         <!-- Tasks View -->
         <section id="view-tarefas" class="fade-in">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg" style="color: rgb(30, 41, 59);">Minhas Tarefas</h2><span id="task-count" class="text-sm text-slate-500"></span>
+            <h2 class="font-semibold text-lg heading-text">Minhas Tarefas</h2><span id="task-count" class="text-sm text-slate-500"></span>
           </div>
           <div id="task-list" class="grid gap-3"></div>
           <div id="empty-state" class="hidden text-center py-16">
@@ -174,7 +230,7 @@
         <!-- Agenda View -->
         <section id="view-agenda" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg" style="color: rgb(30, 41, 59);">Agenda</h2>
+            <h2 class="font-semibold text-lg heading-text">Agenda</h2>
             <div class="flex items-center gap-2">
               <button onclick="calPrev()" aria-label="Mês anterior" class="p-1.5 rounded-lg hover:bg-slate-100"><i aria-hidden="true" data-lucide="chevron-left" class="w-5 h-5 text-slate-600"></i></button>
               <span id="cal-month-label" class="text-sm font-semibold text-slate-700 min-w-[140px] text-center"></span>
@@ -190,7 +246,7 @@
         <!-- Profissional View -->
         <section id="view-profissional" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg" style="color: rgb(30, 41, 59);">Profissional</h2>
+            <h2 class="font-semibold text-lg heading-text">Profissional</h2>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div class="pro-card rounded-xl p-4 text-center"><p class="text-2xl font-bold text-blue-600" id="pro-projects">0</p><p class="text-xs text-slate-500 mt-1">Projetos</p></div>
@@ -218,7 +274,7 @@
         <!-- Metas View -->
         <section id="view-metas" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg" style="color: rgb(30, 41, 59);">Metas &amp; Objetivos</h2>
+            <h2 class="font-semibold text-lg heading-text">Metas &amp; Objetivos</h2>
             <button onclick="openGoalModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-all hover:shadow-lg" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)"><i aria-hidden="true" data-lucide="plus" class="w-4 h-4"></i> Nova Meta</button>
           </div>
           <div id="goals-list" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
@@ -229,7 +285,7 @@
         </section>
         <!-- Dashboard View -->
         <section id="view-dashboard" class="fade-in hidden">
-          <h2 class="font-semibold text-lg mb-4" style="color: rgb(30, 41, 59);">Dashboard</h2>
+          <h2 class="font-semibold text-lg mb-4 heading-text">Dashboard</h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div class="metric-card glass rounded-xl p-4 text-center"><p class="text-2xl font-bold text-indigo-600" id="metric-total">0</p><p class="text-xs text-slate-500 mt-1">Total</p></div>
             <div class="metric-card glass rounded-xl p-4 text-center"><p class="text-2xl font-bold text-green-600" id="metric-done">0</p><p class="text-xs text-slate-500 mt-1">Concluídas</p></div>
@@ -247,7 +303,7 @@
         <!-- Finanças View -->
         <section id="view-financas" class="fade-in hidden">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-lg" style="color: rgb(30, 41, 59);">Finanças</h2>
+            <h2 class="font-semibold text-lg heading-text">Finanças</h2>
             <button onclick="finExport()" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white transition-all hover:shadow-lg" style="background:linear-gradient(135deg,#10b981,#059669)"><i aria-hidden="true" data-lucide="download" class="w-4 h-4"></i> Exportar PDF</button>
           </div>
           <div class="flex gap-2 mb-5">
@@ -478,6 +534,22 @@
         </div>
         <div><label for="inv-f-month" class="text-sm font-medium text-slate-700">Mês de Aplicação</label><input id="inv-f-month" type="month" class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
         <button type="submit" class="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-all hover:shadow-lg mt-2" style="background:linear-gradient(135deg,#10b981,#059669)">Adicionar Investimento</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div id="profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4" onclick="if(event.target===this)closeProfileModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 fade-in" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-lg">Meu Perfil</h3><button onclick="closeProfileModal()" aria-label="Fechar" class="p-1 rounded-lg hover:bg-slate-100"><i aria-hidden="true" data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form id="profile-form" class="grid gap-3" onsubmit="handleProfileSubmit(event)">
+        <div><label for="profile-name" class="text-sm font-medium text-slate-700">Nome</label><input id="profile-name" type="text" required class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
+        <div><label for="profile-email" class="text-sm font-medium text-slate-700">E-mail</label><input id="profile-email" type="email" disabled title="O e-mail não pode ser alterado" class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm bg-slate-50 text-slate-500"></div>
+        <div><label for="profile-phone" class="text-sm font-medium text-slate-700">Telefone</label><input id="profile-phone" type="tel" required class="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-sm"></div>
+        <p id="profile-error" class="text-sm text-red-600 hidden" aria-live="polite"></p>
+        <button type="submit" class="w-full py-2.5 rounded-lg text-white font-medium text-sm transition-all hover:shadow-lg mt-2" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">Salvar Alterações</button>
       </form>
     </div>
   </div>

@@ -48,6 +48,7 @@ const MODAL_CLOSERS = {
   'fin-modal': () => closeFinModal(),
   'investment-modal': () => closeInvestmentModal(),
   'delete-confirm': () => cancelDelete(),
+  'profile-modal': () => closeProfileModal(),
 };
 
 document.addEventListener('keydown', (e) => {
@@ -57,6 +58,14 @@ document.addEventListener('keydown', (e) => {
   const closer = MODAL_CLOSERS[openModalEl.id];
   if (closer) closer();
 });
+
+// ===== TEMA CLARO/ESCURO =====
+const THEME_KEY = 'tasksync_theme';
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+}
 
 let allTasks = [];
 let currentView = 'tarefas';
@@ -212,6 +221,50 @@ async function initDashboard() {
   renderFinCharts();
   renderTransactions();
   await loadProfissionalData();
+}
+
+// ===== PERFIL =====
+async function openProfileModal() {
+  const errEl = document.getElementById('profile-error');
+  errEl.classList.add('hidden');
+  openModalById('profile-modal');
+  lucide.createIcons();
+  try {
+    const profile = await api.fetchProfile();
+    document.getElementById('profile-name').value = profile.name || '';
+    document.getElementById('profile-email').value = profile.email || '';
+    document.getElementById('profile-phone').value = profile.phone || '';
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+function closeProfileModal() { closeModalById('profile-modal'); }
+
+async function handleProfileSubmit(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('profile-error');
+  errEl.classList.add('hidden');
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    const updated = await api.updateProfile({
+      name: document.getElementById('profile-name').value.trim(),
+      phone: document.getElementById('profile-phone').value.trim(),
+    });
+    const raw = localStorage.getItem(USER_KEY);
+    const user = raw ? JSON.parse(raw) : {};
+    localStorage.setItem(USER_KEY, JSON.stringify({ ...user, name: updated.name, email: updated.email }));
+    const nameEl = document.getElementById('logged-user-name');
+    if (nameEl) nameEl.textContent = updated.name;
+    closeProfileModal();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 (() => {
