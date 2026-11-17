@@ -11,6 +11,53 @@ function escapeHtml(value) {
   }[c]));
 }
 
+// ===== ACESSIBILIDADE: FOCO EM MODAIS =====
+// Guarda o elemento que tinha foco antes de abrir o modal, para devolver o
+// foco a ele ao fechar - sem isso, quem navega por teclado/leitor de tela
+// "perde o lugar" na página toda vez que fecha um modal.
+let lastFocusedBeforeModal = null;
+
+function openModalById(modalId) {
+  const modal = document.getElementById(modalId);
+  lastFocusedBeforeModal = document.activeElement;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  // Prioriza o primeiro campo preenchível; só cai pro primeiro botão (ex.:
+  // "Cancelar" no modal de exclusão) quando não há nenhum.
+  const focusTarget = modal.querySelector('input:not([type="hidden"]), textarea, select') || modal.querySelector('button');
+  if (focusTarget) focusTarget.focus();
+}
+
+function closeModalById(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === 'function') {
+    lastFocusedBeforeModal.focus();
+  }
+  lastFocusedBeforeModal = null;
+}
+
+const MODAL_CLOSERS = {
+  'modal': () => closeModal(),
+  'goal-modal': () => closeGoalModal(),
+  'project-modal': () => closeProjectModal(),
+  'team-modal': () => closeTeamModal(),
+  'fin-modal': () => closeFinModal(),
+  'investment-modal': () => closeInvestmentModal(),
+  'delete-confirm': () => cancelDelete(),
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const openModalEl = document.querySelector('.modal-overlay:not(.hidden)');
+  if (!openModalEl) return;
+  const closer = MODAL_CLOSERS[openModalEl.id];
+  if (closer) closer();
+});
+
 let allTasks = [];
 let currentView = 'tarefas';
 let searchQuery = '';
@@ -215,13 +262,13 @@ function taskCard(t) {
   const overdue = t.due_date && t.due_date < today && !t.completed;
   return `<div class="task-card glass rounded-xl p-4 priority-${t.priority} slide-in cursor-pointer" onclick="editTask(${t.id})">
     <div class="flex items-start gap-3">
-      <button onclick="event.stopPropagation();toggleComplete(${t.id})" class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 ${t.completed ? 'bg-green-500 border-green-500' : 'border-slate-300 hover:border-indigo-400'} flex items-center justify-center transition-all">${t.completed ? '<i data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}</button>
+      <button onclick="event.stopPropagation();toggleComplete(${t.id})" aria-label="${t.completed ? 'Marcar como pendente' : 'Marcar como concluída'}" class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 ${t.completed ? 'bg-green-500 border-green-500' : 'border-slate-300 hover:border-indigo-400'} flex items-center justify-center transition-all">${t.completed ? '<i aria-hidden="true" data-lucide="check" class="w-3 h-3 text-white"></i>' : ''}</button>
       <div class="flex-1 min-w-0">
-        <p class="font-medium text-sm ${t.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(t.title)}</p>
+        <p class="font-medium text-sm ${t.completed ? 'line-through text-slate-500' : 'text-slate-800'}">${escapeHtml(t.title)}</p>
         ${t.description ? `<p class="text-xs text-slate-500 mt-0.5 truncate">${escapeHtml(t.description)}</p>` : ''}
-        <div class="flex items-center gap-2 mt-2 flex-wrap">${tags}${t.due_date ? `<span class="text-xs ${overdue ? 'text-red-500 font-medium' : 'text-slate-400'}"><i data-lucide="calendar" class="w-3 h-3 inline"></i> ${formatDate(t.due_date)}</span>` : ''}${subtasks.length ? `<span class="text-xs text-slate-400">${doneSub}/${subtasks.length} subtarefas</span>` : ''}</div>
+        <div class="flex items-center gap-2 mt-2 flex-wrap">${tags}${t.due_date ? `<span class="text-xs ${overdue ? 'text-red-600 font-medium' : 'text-slate-500'}"><i aria-hidden="true" data-lucide="calendar" class="w-3 h-3 inline"></i> ${formatDate(t.due_date)}</span>` : ''}${subtasks.length ? `<span class="text-xs text-slate-500">${doneSub}/${subtasks.length} subtarefas</span>` : ''}</div>
       </div>
-      <button onclick="event.stopPropagation();promptDelete(${t.id})" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      <button onclick="event.stopPropagation();promptDelete(${t.id})" aria-label="Excluir tarefa" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition-colors"><i aria-hidden="true" data-lucide="trash-2" class="w-4 h-4"></i></button>
     </div>
   </div>`;
 }
@@ -229,7 +276,7 @@ function taskCard(t) {
 const weekDays = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-function renderCalHeader() { document.getElementById('cal-header').innerHTML = weekDays.map(d => `<div class="text-xs font-semibold text-slate-400 text-center py-1">${d}</div>`).join(''); }
+function renderCalHeader() { document.getElementById('cal-header').innerHTML = weekDays.map(d => `<div class="text-xs font-semibold text-slate-500 text-center py-1">${d}</div>`).join(''); }
 function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
 function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
 
@@ -258,7 +305,7 @@ function selectCalDay(d) { calSelected = d; renderCalendar(); }
 function renderCalDayTasks() {
   const wsTasks = getTasks().filter(t => t.due_date === calSelected);
   const container = document.getElementById('cal-day-tasks');
-  if (!wsTasks.length) { container.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">Nenhuma tarefa para ${formatDate(calSelected)}.</p>`; return; }
+  if (!wsTasks.length) { container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4">Nenhuma tarefa para ${formatDate(calSelected)}.</p>`; return; }
   container.innerHTML = `<p class="text-xs font-semibold text-slate-500 mb-2">${formatDate(calSelected)}</p>` + wsTasks.map(t => taskCard(t)).join('');
   lucide.createIcons();
 }
@@ -292,7 +339,7 @@ function renderProfissional() {
     projectList.innerHTML = projects.map(p => `<div class="pro-card rounded-xl p-4">
       <div class="flex items-center justify-between mb-2">
         <p class="text-sm font-semibold text-slate-800">${escapeHtml(p.name)}</p>
-        <button onclick="promptDelete(${p.id}, 'project')" class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        <button onclick="promptDelete(${p.id}, 'project')" aria-label="Excluir projeto" class="p-1 rounded hover:bg-red-50 text-slate-500 hover:text-red-600"><i aria-hidden="true" data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
       </div>
       <select onchange="updateProjectStatus(${p.id}, this.value)" class="text-xs px-2 py-1 rounded-full border-0 mb-2" style="background:${color(p.status)}20;color:${color(p.status)}">
         <option value="Planejamento" ${p.status === 'Planejamento' ? 'selected' : ''}>Planejamento</option>
@@ -301,10 +348,10 @@ function renderProfissional() {
       </select>
       <div class="w-full bg-slate-200 rounded-full h-2 mt-1"><div class="h-2 rounded-full goal-progress" style="width:${p.progress}%;background:${color(p.status)}"></div></div>
       <div class="flex items-center justify-between mt-2">
-        <p class="text-xs text-slate-400">${p.progress}% concluído</p>
+        <p class="text-xs text-slate-500">${p.progress}% concluído</p>
         <div class="flex gap-1">
-          <button onclick="updateProjectProgress(${p.id}, -10)" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-sm font-bold">−</button>
-          <button onclick="updateProjectProgress(${p.id}, 10)" class="w-6 h-6 rounded bg-indigo-100 hover:bg-indigo-200 flex items-center justify-center text-indigo-700 text-sm font-bold">+</button>
+          <button onclick="updateProjectProgress(${p.id}, -10)" aria-label="Diminuir progresso em 10%" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-sm font-bold">−</button>
+          <button onclick="updateProjectProgress(${p.id}, 10)" aria-label="Aumentar progresso em 10%" class="w-6 h-6 rounded bg-indigo-100 hover:bg-indigo-200 flex items-center justify-center text-indigo-700 text-sm font-bold">+</button>
         </div>
       </div>
     </div>`).join('');
@@ -319,15 +366,15 @@ function renderProfissional() {
     teamEmpty.classList.add('hidden');
     teamList.innerHTML = team.map((m, i) => `<div class="flex items-center gap-2 pro-card rounded-lg px-3 py-2">
       <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:${teamColors[i % teamColors.length]}">${escapeHtml(m.name.charAt(0).toUpperCase())}</div>
-      <div><p class="text-sm font-medium text-slate-800">${escapeHtml(m.name)}</p><p class="text-xs text-slate-400">${escapeHtml(m.role || '')}</p></div>
-      <button onclick="promptDelete(${m.id}, 'team')" class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 ml-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+      <div><p class="text-sm font-medium text-slate-800">${escapeHtml(m.name)}</p><p class="text-xs text-slate-500">${escapeHtml(m.role || '')}</p></div>
+      <button onclick="promptDelete(${m.id}, 'team')" aria-label="Excluir membro" class="p-1 rounded hover:bg-red-50 text-slate-500 hover:text-red-600 ml-1"><i aria-hidden="true" data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
     </div>`).join('');
   }
   lucide.createIcons();
 }
 
-function openProjectModal() { const m = document.getElementById('project-modal'); m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons(); }
-function closeProjectModal() { const m = document.getElementById('project-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function openProjectModal() { openModalById('project-modal'); lucide.createIcons(); }
+function closeProjectModal() { closeModalById('project-modal'); }
 
 async function handleProjectSubmit(e) {
   e.preventDefault();
@@ -359,8 +406,8 @@ async function updateProjectStatus(id, status) {
   renderProfissional();
 }
 
-function openTeamModal() { const m = document.getElementById('team-modal'); m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons(); }
-function closeTeamModal() { const m = document.getElementById('team-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function openTeamModal() { openModalById('team-modal'); lucide.createIcons(); }
+function closeTeamModal() { closeModalById('team-modal'); }
 
 async function handleTeamSubmit(e) {
   e.preventDefault();
@@ -382,7 +429,7 @@ function renderGoals() {
   list.innerHTML = goals.map(g => {
     const pct = g.goal_target ? Math.min(100, Math.round((g.goal_current || 0) / g.goal_target * 100)) : 0;
     const tags = (g.tags || '').split(',').filter(Boolean).map(tg => `<span class="tag-pill bg-purple-50 text-purple-600">${escapeHtml(tg.trim())}</span>`).join('');
-    return `<div class="glass rounded-xl p-5 fade-in"><div class="flex items-start justify-between mb-3"><div><p class="font-semibold text-sm text-slate-800">${escapeHtml(g.title)}</p><div class="flex gap-1 mt-1">${tags}</div></div><button onclick="promptDelete(${g.id})" class="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex items-center gap-2 mb-2"><div class="flex-1 bg-slate-200 rounded-full h-2.5"><div class="h-2.5 rounded-full goal-progress" style="width:${pct}%;background:linear-gradient(90deg,#6366f1,#a78bfa)"></div></div><span class="text-xs font-semibold text-indigo-600">${pct}%</span></div><div class="flex items-center justify-between"><span class="text-xs text-slate-400">${g.goal_current || 0} / ${g.goal_target}</span><div class="flex gap-1"><button onclick="updateGoalProgress(${g.id}, -1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-bold transition-all">−</button><button onclick="updateGoalProgress(${g.id}, 1)" class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 flex items-center justify-center text-indigo-700 text-lg font-bold transition-all">+</button></div></div></div>`;
+    return `<div class="glass rounded-xl p-5 fade-in"><div class="flex items-start justify-between mb-3"><div><p class="font-semibold text-sm text-slate-800">${escapeHtml(g.title)}</p><div class="flex gap-1 mt-1">${tags}</div></div><button onclick="promptDelete(${g.id})" aria-label="Excluir meta" class="p-1 rounded hover:bg-red-50 text-slate-500 hover:text-red-600"><i aria-hidden="true" data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex items-center gap-2 mb-2"><div class="flex-1 bg-slate-200 rounded-full h-2.5"><div class="h-2.5 rounded-full goal-progress" style="width:${pct}%;background:linear-gradient(90deg,#6366f1,#a78bfa)"></div></div><span class="text-xs font-semibold text-indigo-600">${pct}%</span></div><div class="flex items-center justify-between"><span class="text-xs text-slate-500">${g.goal_current || 0} / ${g.goal_target}</span><div class="flex gap-1"><button onclick="updateGoalProgress(${g.id}, -1)" aria-label="Diminuir progresso" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-bold transition-all">−</button><button onclick="updateGoalProgress(${g.id}, 1)" aria-label="Aumentar progresso" class="w-7 h-7 rounded-lg bg-indigo-100 hover:bg-indigo-200 flex items-center justify-center text-indigo-700 text-lg font-bold transition-all">+</button></div></div></div>`;
   }).join('');
   lucide.createIcons();
 }
@@ -395,8 +442,8 @@ async function updateGoalProgress(id, delta) {
   await api.updateTask({ ...goal, goal_current: next });
   await loadTasks();
 }
-function openGoalModal() { const m = document.getElementById('goal-modal'); m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons(); }
-function closeGoalModal() { const m = document.getElementById('goal-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function openGoalModal() { openModalById('goal-modal'); lucide.createIcons(); }
+function closeGoalModal() { closeModalById('goal-modal'); }
 async function handleGoalSubmit(e) {
   e.preventDefault();
   if (allTasks.length >= 999) return;
@@ -439,7 +486,6 @@ function renderTagFilters() {
 }
 
 function openModal(task) {
-  const modal = document.getElementById('modal'); modal.classList.remove('hidden'); modal.classList.add('flex');
   if (task) {
     document.getElementById('modal-title').textContent = 'Editar Tarefa';
     document.getElementById('form-submit-btn').textContent = 'Salvar';
@@ -455,9 +501,10 @@ function openModal(task) {
     document.getElementById('form-submit-btn').textContent = 'Criar Tarefa';
     document.getElementById('task-form').reset(); document.getElementById('edit-id').value = '';
   }
+  openModalById('modal');
   lucide.createIcons();
 }
-function closeModal() { const modal = document.getElementById('modal'); modal.classList.add('hidden'); modal.classList.remove('flex'); }
+function closeModal() { closeModalById('modal'); }
 
 async function handleSubmit(e) {
   e.preventDefault();
@@ -482,8 +529,8 @@ async function handleSubmit(e) {
 
 function editTask(id) { const task = allTasks.find(t => t.id === id); if (task) openModal(task); }
 async function toggleComplete(id) { const task = allTasks.find(t => t.id === id); if (task) { await api.updateTask({ ...task, completed: !task.completed }); await loadTasks(); } }
-function promptDelete(id, type = 'task') { deleteTarget = id; deleteTargetType = type; const d = document.getElementById('delete-confirm'); d.classList.remove('hidden'); d.classList.add('flex'); lucide.createIcons(); }
-function cancelDelete() { deleteTarget = null; const d = document.getElementById('delete-confirm'); d.classList.add('hidden'); d.classList.remove('flex'); }
+function promptDelete(id, type = 'task') { deleteTarget = id; deleteTargetType = type; openModalById('delete-confirm'); lucide.createIcons(); }
+function cancelDelete() { deleteTarget = null; closeModalById('delete-confirm'); }
 async function confirmDelete() {
   if (!deleteTarget) return;
   const btn = document.getElementById('confirm-delete-btn'); btn.disabled = true;
@@ -651,30 +698,30 @@ function renderTransactions() {
   if (filterPayment) filtered = filtered.filter(t => t.payment === filterPayment);
 
   const container = document.getElementById('fin-transactions');
-  if (!filtered.length) { container.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Nenhum lançamento encontrado.</p>'; return; }
-  const typeColors = { entrada: 'text-emerald-600', saida: 'text-red-500', cartao: 'text-orange-500' };
+  if (!filtered.length) { container.innerHTML = '<p class="text-sm text-slate-500 text-center py-6">Nenhum lançamento encontrado.</p>'; return; }
+  const typeColors = { entrada: 'text-emerald-600', saida: 'text-red-600', cartao: 'text-orange-500' };
   const typeLabels = { entrada: 'Entrada', saida: 'Saída', cartao: 'Cartão' };
   const paymentLabels = { pix: 'Pix', dinheiro: 'Dinheiro', cartao_credito: 'Cartão Crédito', cartao_debito: 'Débito', boleto: 'Boleto', transferencia: 'Transferência' };
   container.innerHTML = filtered.map(t => `<div class="glass rounded-lg p-3 flex items-center justify-between slide-in">
     <div class="flex items-center gap-3">
       <div class="w-9 h-9 rounded-lg flex items-center justify-center ${t.type === 'entrada' ? 'bg-emerald-100' : t.type === 'cartao' ? 'bg-orange-100' : 'bg-red-100'}">
-        <i data-lucide="${t.type === 'entrada' ? 'trending-up' : t.type === 'cartao' ? 'credit-card' : 'trending-down'}" class="w-4 h-4 ${typeColors[t.type]}"></i>
+        <i aria-hidden="true" data-lucide="${t.type === 'entrada' ? 'trending-up' : t.type === 'cartao' ? 'credit-card' : 'trending-down'}" class="w-4 h-4 ${typeColors[t.type]}"></i>
       </div>
       <div>
         <p class="text-sm font-medium text-slate-800">${escapeHtml(t.description)}</p>
-        <p class="text-xs text-slate-400">${typeLabels[t.type]} • ${paymentLabels[t.payment] || t.payment} • ${escapeHtml(t.category)}</p>
+        <p class="text-xs text-slate-500">${typeLabels[t.type]} • ${paymentLabels[t.payment] || t.payment} • ${escapeHtml(t.category)}</p>
       </div>
     </div>
     <div class="flex items-center gap-2">
       <p class="text-sm font-semibold ${typeColors[t.type]}">${t.type === 'entrada' ? '+' : '-'}R$ ${t.amount.toLocaleString('pt-BR')}</p>
-      <button onclick="promptDelete(${t.id}, 'transaction')" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      <button onclick="promptDelete(${t.id}, 'transaction')" aria-label="Excluir lançamento" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition-colors"><i aria-hidden="true" data-lucide="trash-2" class="w-4 h-4"></i></button>
     </div>
   </div>`).join('');
   lucide.createIcons();
 }
 
-function openFinModal() { const m = document.getElementById('fin-modal'); m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons(); }
-function closeFinModal() { const m = document.getElementById('fin-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function openFinModal() { openModalById('fin-modal'); lucide.createIcons(); }
+function closeFinModal() { closeModalById('fin-modal'); }
 
 async function handleFinSubmit(e) {
   e.preventDefault();
@@ -729,7 +776,7 @@ function renderInstallments() {
       const isPast = inst.month < currentMonth;
       return `<div class="flex items-center gap-3 p-3 rounded-lg ${isCurrent ? 'bg-emerald-50 border border-emerald-200' : isPast ? 'bg-slate-50 opacity-60' : 'glass'}">
         <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isCurrent ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'}">${inst.num}</div>
-        <div class="flex-1"><p class="text-sm font-medium text-slate-700">${inst.month}</p><p class="text-xs text-slate-400">Parcela ${inst.num}/${inst.total}</p></div>
+        <div class="flex-1"><p class="text-sm font-medium text-slate-700">${inst.month}</p><p class="text-xs text-slate-500">Parcela ${inst.num}/${inst.total}</p></div>
         <p class="text-sm font-semibold ${isCurrent ? 'text-emerald-600' : 'text-slate-600'}">R$ ${inst.amount.toLocaleString('pt-BR')}</p>
       </div>`;
     }).join('')}</div>`;
@@ -737,7 +784,7 @@ function renderInstallments() {
 
 function finExport() {
   const toast = document.getElementById('fin-toast');
-  toast.innerHTML = '<div class="fin-toast bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i><span class="text-sm font-medium">Exportação preparada! Integração com PDF em breve.</span></div>';
+  toast.innerHTML = '<div class="fin-toast bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2"><i aria-hidden="true" data-lucide="check-circle" class="w-5 h-5"></i><span class="text-sm font-medium">Exportação preparada! Integração com PDF em breve.</span></div>';
   toast.classList.remove('hidden');
   lucide.createIcons();
   setTimeout(() => toast.classList.add('hidden'), 3000);
@@ -808,7 +855,7 @@ function renderInvestmentTable() {
       <td class="text-right px-3 py-2.5 font-semibold ${gain >= 0 ? 'text-emerald-600' : 'text-red-600'}">${gain >= 0 ? '+' : ''}${gainPct}%</td>
       <td class="text-center px-3 py-2.5 text-slate-600 text-xs">${inv.month}</td>
       <td class="text-center px-3 py-2.5"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">${status}</span></td>
-      <td class="text-center px-3 py-2.5"><button onclick="promptDelete(${inv.id}, 'investment')" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+      <td class="text-center px-3 py-2.5"><button onclick="promptDelete(${inv.id}, 'investment')" aria-label="Excluir investimento" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-500 hover:text-red-600 transition-colors"><i aria-hidden="true" data-lucide="trash-2" class="w-4 h-4"></i></button></td>
     </tr>`;
   }).join('');
   updateInvestmentSummary();
@@ -830,8 +877,8 @@ function updateInvestmentSummary() {
   document.getElementById('inv-total-return').classList.toggle('text-red-600', gain < 0);
 }
 
-function openInvestmentModal() { const m = document.getElementById('investment-modal'); m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons(); }
-function closeInvestmentModal() { const m = document.getElementById('investment-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function openInvestmentModal() { openModalById('investment-modal'); lucide.createIcons(); }
+function closeInvestmentModal() { closeModalById('investment-modal'); }
 
 async function handleInvestmentSubmit(e) {
   e.preventDefault();
